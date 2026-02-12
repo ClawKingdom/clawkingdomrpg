@@ -140,6 +140,19 @@ const SLOT_LABELS = {
   offhand: '🛡 OFF-HAND', ring: '💍 RING 1', ring2: '💍 RING 2', amulet: '📿 AMULET'
 };
 
+// Map item types from dungeons to equipment slots
+const TYPE_TO_SLOT = {
+  'weapon': 'weapon',
+  'helmet': 'helmet',
+  'chest': 'chest',
+  'boots': 'boots',
+  'gloves': 'gloves',
+  'offhand': 'offhand',
+  'ring': 'ring',
+  'amulet': 'amulet',
+  'accessory': 'ring'
+};
+
 const RARITY_COLORS = {
   common: '#9ca3af', 
   uncommon: '#10b981', 
@@ -177,8 +190,18 @@ function render() {
     const div = document.createElement('div');
     div.className = 'equipment-slot';
     div.dataset.slot = slot;
-    const itemId = equipment[slot];
-    const item = itemId ? ITEM_DATABASE[itemId] : null;
+    const equipmentItem = equipment[slot];
+    
+    // Get item object (handle both legacy ID format and modern object format)
+    let item = null;
+    if (equipmentItem) {
+      if (typeof equipmentItem === 'string' && ITEM_DATABASE[equipmentItem]) {
+        item = ITEM_DATABASE[equipmentItem];
+      } else if (typeof equipmentItem === 'object') {
+        item = equipmentItem;
+      }
+    }
+    
     if (item) { div.style.borderColor = RARITY_COLORS[item.rarity]; }
     
     const itemRarity = item?.rarity || 'common';
@@ -187,9 +210,19 @@ function render() {
     let statsDisplay = '';
     if (item) {
       const statNames = ['str','dex','int','vit','atk','def','crit','critdmg'];
-      const itemStats = statNames.filter(s => item[s] !== undefined && item[s] !== null);
-      if (itemStats.length > 0) {
-        const topStats = itemStats.slice(0, 2).map(s => `<span style="color:#34d399">${s.toUpperCase()}${item[s]>0?'+':''}${item[s]}</span>`).join(' / ');
+      // Collect stats from both formats
+      const itemStats = {};
+      statNames.forEach(s => {
+        if (item[s] !== undefined && item[s] !== null) {
+          itemStats[s] = item[s];
+        } else if (item.stats && item.stats[s] !== undefined && item.stats[s] !== null) {
+          itemStats[s] = item.stats[s];
+        }
+      });
+      
+      const statKeys = Object.keys(itemStats).filter(s => itemStats[s] !== 0);
+      if (statKeys.length > 0) {
+        const topStats = statKeys.slice(0, 2).map(s => `<span style="color:#34d399">${s.toUpperCase()}${itemStats[s]>0?'+':''}${itemStats[s]}</span>`).join(' / ');
         statsDisplay = '<div class="slot-stats">' + topStats + '</div>';
       }
     }
@@ -197,16 +230,27 @@ function render() {
     div.innerHTML = '<div class="slot-label">' + SLOT_LABELS[slot] + '</div>' +
       (item ? '<div class="slot-icon">' + item.icon + '</div><div class="slot-name" style="color: ' + rarityColor + '">' + item.name + '</div>' + statsDisplay : '<div class="empty-slot">Empty</div>');
     
-    // Tooltip on hover
+    // Tooltip on hover (show tooltip for equipped item)
     if (item) {
-      div.addEventListener('mouseenter', (e) => { showItemTooltip(e, item); });
+      div.addEventListener('mouseenter', (e) => { 
+        showItemTooltip(e, item); 
+      });
       div.addEventListener('mouseleave', () => { hideItemTooltip(); });
     }
     
     // Unequip on click
     div.addEventListener('click', () => {
       if (equipment[slot]) {
-        inventory.push(equipment[slot]);
+        // Push the full item object, not just the ID
+        const unequippedItem = equipment[slot];
+        if (typeof unequippedItem === 'string') {
+          // Legacy: item is just an ID, look it up
+          const itemData = ITEM_DATABASE[unequippedItem];
+          if (itemData) inventory.push({...itemData});
+        } else {
+          // Modern: item is already an object, push it
+          inventory.push(unequippedItem);
+        }
         equipment[slot] = null;
         saveData();
         render();
@@ -220,10 +264,27 @@ function render() {
       e.preventDefault();
       div.style.opacity = '1';
       if (draggedItemIndex !== null && draggedItemIndex < inventory.length) {
-        const item = inventory[draggedItemIndex];
-        if (ITEM_DATABASE[item] && ITEM_DATABASE[item].slot === slot) {
-          if (equipment[slot]) inventory.push(equipment[slot]);
-          equipment[slot] = inventory[draggedItemIndex];
+        const draggedItem = inventory[draggedItemIndex];
+        
+        // Get the slot type from the item
+        let itemSlot = null;
+        if (typeof draggedItem === 'string' && ITEM_DATABASE[draggedItem]) {
+          // Legacy: item ID lookup
+          itemSlot = ITEM_DATABASE[draggedItem].slot;
+        } else if (typeof draggedItem === 'object') {
+          // Modern: item object (from dungeon drops or unequip)
+          // Try slot first, then type, then map type to slot
+          itemSlot = draggedItem.slot || TYPE_TO_SLOT[draggedItem.type] || draggedItem.type;
+        }
+        
+        // Check if slot matches
+        if (itemSlot === slot) {
+          if (equipment[slot]) {
+            // Store the unequipped item
+            const unequipped = equipment[slot];
+            inventory.push(typeof unequipped === 'string' ? ITEM_DATABASE[unequipped] || unequipped : unequipped);
+          }
+          equipment[slot] = draggedItem;
           inventory.splice(draggedItemIndex, 1);
           draggedItemIndex = null;
           saveData();
@@ -282,12 +343,35 @@ function saveData() {
 function updateStats() {
   if (!character) return;
   const stats = { str: 10, dex: 10, int: 10, vit: 10 };
-  Object.values(equipment).forEach(itemId => {
-    if (itemId && ITEM_DATABASE[itemId]) {
-      const item = ITEM_DATABASE[itemId];
-      if (item.stats) Object.keys(item.stats).forEach(stat => { stats[stat] = (stats[stat] || 0) + item.stats[stat]; });
+  
+  Object.values(equipment).forEach(item => {
+    if (!item) return;
+    
+    // Handle legacy format: item is just an ID string
+    if (typeof item === 'string' && ITEM_DATABASE[item]) {
+      const dbItem = ITEM_DATABASE[item];
+      if (dbItem.stats) {
+        Object.keys(dbItem.stats).forEach(stat => {
+          stats[stat] = (stats[stat] || 0) + dbItem.stats[stat];
+        });
+      }
+    }
+    // Handle modern format: item is an object with direct stat properties
+    else if (typeof item === 'object') {
+      ['str','dex','int','vit','atk','def','crit','critdmg'].forEach(stat => {
+        if (item[stat] !== undefined && item[stat] !== null) {
+          stats[stat] = (stats[stat] || 0) + item[stat];
+        }
+      });
+      // Also check nested stats object
+      if (item.stats) {
+        Object.keys(item.stats).forEach(stat => {
+          stats[stat] = (stats[stat] || 0) + item.stats[stat];
+        });
+      }
     }
   });
+  
   const lvl = character.level || 1;
   stats.attack = (stats.str || 10) * 2 + lvl;
   stats.defense = Math.floor((stats.vit || 10) * 1.5) + lvl;
@@ -310,7 +394,21 @@ function showItemTooltip(event, item) {
   if (!item) return;
   const rarity = item.rarity || 'common';
   const statNames = ['str','dex','int','vit','atk','def','crit','critdmg'];
-  const stats = statNames.filter(s => item[s] !== undefined && item[s] !== null);
+  
+  // Collect stats from both formats: item.stat and item.stats.stat
+  const statValues = {};
+  statNames.forEach(s => {
+    // Check direct property (dungeon drops)
+    if (item[s] !== undefined && item[s] !== null) {
+      statValues[s] = item[s];
+    }
+    // Check nested stats object (ITEM_DATABASE)
+    else if (item.stats && item.stats[s] !== undefined && item.stats[s] !== null) {
+      statValues[s] = item.stats[s];
+    }
+  });
+  
+  const stats = Object.keys(statValues).filter(s => statValues[s] !== 0);
   
   let tooltip = document.getElementById('item-tooltip');
   if (!tooltip) {
@@ -322,18 +420,19 @@ function showItemTooltip(event, item) {
   
   let statRows = stats.length > 0 
     ? stats.map(s => {
-        const val = item[s];
+        const val = statValues[s];
         const sign = val > 0 ? '+' : '';
         return `<div class="tooltip-stat"><span>${s.toUpperCase()}</span><span class="tooltip-stat-val">${sign}${val}</span></div>`;
       }).join('')
     : '<div style="color:#9ca3af;font-size:10px">No stat bonuses</div>';
   
   const tooltipColor = RARITY_COLORS[rarity] || '#9ca3af';
+  const itemType = item.type || (item.slot ? item.slot.toUpperCase() : 'ITEM');
   
   tooltip.innerHTML = `
     <div class="tooltip-name" style="color:${tooltipColor}">${item.name}</div>
     <div class="tooltip-rarity" style="color:${tooltipColor}">◆ ${rarity.toUpperCase()}</div>
-    <div class="tooltip-type">${(item.type || 'item').toUpperCase()}</div>
+    <div class="tooltip-type">${itemType}</div>
     <div>${statRows}</div>
   `;
   tooltip.classList.add('active');
