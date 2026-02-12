@@ -129,6 +129,10 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .loot-item-icon { font-size: 28px; display: block; margin-bottom: 8px; }
 .loot-item-name { font-size: 7px; color: #fff; margin-bottom: 4px; }
 .loot-item-rarity { font-size: 6px; color: var(--item-rarity, #8b7355); letter-spacing: 1px; }
+.loot-item-stats { font-size: 5px; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); text-align: left; color: rgba(255,255,255,0.6); }
+.loot-stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.loot-stat-name { color: rgba(255,255,255,0.4); }
+.loot-stat-val { color: #34d399; font-weight: bold; }
 .loot-item-new { position: absolute; top: -8px; right: -8px; background: #ff8c00; color: #000; font-size: 5px; padding: 3px 5px; border: 1px solid #000; }
 .modal-actions { display: flex; gap: 12px; justify-content: center; }
 .modal-btn { background: var(--panel); color: #fff; padding: 14px 24px; border: 3px solid var(--purple); cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 9px; letter-spacing: 1px; transition: all 0.2s; }
@@ -316,7 +320,56 @@ TO BEGIN
 const CLASS_SPRITES = { warrior: '🗡️', mage: '🔮', rogue: '🗡️', paladin: '⚔️', ranger: '🏹', bard: '🎵' };
 const CLASS_BASE_STATS = { warrior: { str:14, dex:8, int:4, vit:12 }, mage: { str:4, dex:10, int:16, vit:6 }, rogue: { str:10, dex:14, int:6, vit:8 }, paladin: { str:10, dex:8, int:10, vit:10 }, ranger: { str:10, dex:14, int:6, vit:8 }, bard: { str:6, dex:12, int:10, vit:10 } };
 const DUNGEON_CONFIGS = { easy: { minLvl:1, maxLvl:15, level:1, floors:3, xpMin:200, xpMax:400, voidMin:5, voidMax:15, items:[1,2], bosses:['🐀','🦎','🐍'], bossNames:['Giant Rat','Forest Lizard','Cave Serpent'] }, normal: { minLvl:15, maxLvl:30, level:2, floors:5, xpMin:500, xpMax:900, voidMin:15, voidMax:40, items:[2,3], bosses:['💀','🦇','🧟'], bossNames:['Skeleton Lord','Vampire Bat','Dungeon Zombie'] }, hard: { minLvl:30, maxLvl:60, level:3, floors:8, xpMin:1000, xpMax:2000, voidMin:50, voidMax:120, items:[3,4], bosses:['🐉','👿','💀'], bossNames:['Ancient Dragon','Demon Prince','Lich King'] } };
-const LOOT_POOL = { common: [{name:'Iron Shortsword',icon:'🗡️',type:'weapon'},{name:'Leather Cap',icon:'🪖',type:'helmet'},{name:'Frayed Cloak',icon:'🧥',type:'chest'},{name:'Worn Boots',icon:'👞',type:'boots'},{name:'Health Potion',icon:'🧪',type:'consumable'},{name:'Rope Coil',icon:'🪢',type:'misc'}], uncommon: [{name:'Steel Longsword',icon:'⚔️',type:'weapon'},{name:'Chain Coif',icon:'⛑️',type:'helmet'},{name:'Brigandine Vest',icon:'🎽',type:'chest'},{name:'Shadowstep Boots',icon:'👢',type:'boots'},{name:'Mana Crystal',icon:'💎',type:'accessory'},{name:'Scout Ring',icon:'💍',type:'ring'}], rare: [{name:"Bladesinger's Rapier",icon:'🌟',type:'weapon'},{name:'Arcane Helm',icon:'🪄',type:'helmet'},{name:'Dragonscale Mail',icon:'🛡️',type:'chest'},{name:'Windwalker Boots',icon:'💨',type:'boots'},{name:'Eye of the Seer',icon:'👁️',type:'amulet'},{name:"Wizard's Signet",icon:'💍',type:'ring'}], epic: [{name:'Voidcleaver',icon:'🌑',type:'weapon'},{name:'Crown of the Fallen',icon:'👑',type:'helmet'},{name:"Demon's Embrace",icon:'🖤',type:'chest'},{name:"Banshee's Step",icon:'💀',type:'boots'},{name:'Void Pendant',icon:'⚫',type:'amulet'},{name:'Eternal Flame Band',icon:'🔥',type:'ring'}], legendary: [{name:'Sundering Axe of Ruin',icon:'⚡',type:'weapon'},{name:'Mythbreaker Crown',icon:'✨',type:'helmet'},{name:'Zodiac Plate',icon:'🌌',type:'chest'},{name:'Starfall Greaves',icon:'🌠',type:'boots'},{name:'Amulet of the Ancients',icon:'🏺',type:'amulet'},{name:'Ring of the Void',icon:'♾️',type:'ring'}], void: [{name:'Nullblade',icon:'🌀',type:'weapon'},{name:'Helm of the Abyss',icon:'🕳️',type:'helmet'},{name:'Voidweave Shroud',icon:'🫧',type:'chest'},{name:'Steps of Nothing',icon:'⬛',type:'boots'},{name:'Null-Stone Pendant',icon:'🔮',type:'amulet'},{name:'Ouroboros Band',icon:'🌑',type:'ring'}] };
+const LOOT_POOL = { 
+  common: [
+    {name:'Iron Shortsword',icon:'🗡️',type:'weapon',atk:+8,str:+2},
+    {name:'Leather Cap',icon:'🪖',type:'helmet',def:+6,vit:+1},
+    {name:'Frayed Cloak',icon:'🧥',type:'chest',def:+5,dex:+1},
+    {name:'Worn Boots',icon:'👞',type:'boots',def:+3,dex:+2},
+    {name:'Health Potion',icon:'🧪',type:'consumable',vit:+3},
+    {name:'Rope Coil',icon:'🪢',type:'misc',str:+1}
+  ],
+  uncommon: [
+    {name:'Steel Longsword',icon:'⚔️',type:'weapon',atk:+15,str:+4},
+    {name:'Chain Coif',icon:'⛑️',type:'helmet',def:+12,vit:+3},
+    {name:'Brigandine Vest',icon:'🎽',type:'chest',def:+10,str:+2},
+    {name:'Shadowstep Boots',icon:'👢',type:'boots',def:+8,dex:+4},
+    {name:'Mana Crystal',icon:'💎',type:'accessory',int:+5,atk:+4},
+    {name:'Scout Ring',icon:'💍',type:'ring',dex:+3,def:+2}
+  ],
+  rare: [
+    {name:"Bladesinger's Rapier",icon:'🌟',type:'weapon',atk:+28,str:+6,dex:+4},
+    {name:'Arcane Helm',icon:'🪄',type:'helmet',def:+18,int:+6},
+    {name:'Dragonscale Mail',icon:'🛡️',type:'chest',def:+20,vit:+5},
+    {name:'Windwalker Boots',icon:'💨',type:'boots',def:+12,dex:+8},
+    {name:'Eye of the Seer',icon:'👁️',type:'amulet',int:+8,def:+4},
+    {name:"Wizard's Signet",icon:'💍',type:'ring',int:+6,atk:+6}
+  ],
+  epic: [
+    {name:'Voidcleaver',icon:'🌑',type:'weapon',atk:+45,str:+10},
+    {name:'Crown of the Fallen',icon:'👑',type:'helmet',def:+32,vit:+8,int:+4},
+    {name:"Demon's Embrace",icon:'🖤',type:'chest',def:+35,str:+8},
+    {name:"Banshee's Step",icon:'💀',type:'boots',def:+24,dex:+12},
+    {name:'Void Pendant',icon:'⚫',type:'amulet',int:+12,str:+6},
+    {name:'Eternal Flame Band',icon:'🔥',type:'ring',atk:+20,int:+8}
+  ],
+  legendary: [
+    {name:'Sundering Axe of Ruin',icon:'⚡',type:'weapon',atk:+70,str:+16,crit:+15},
+    {name:'Mythbreaker Crown',icon:'✨',type:'helmet',def:+50,vit:+12,int:+8},
+    {name:'Zodiac Plate',icon:'🌌',type:'chest',def:+55,str:+12},
+    {name:'Starfall Greaves',icon:'🌠',type:'boots',def:+40,dex:+16,crit:+10},
+    {name:'Amulet of the Ancients',icon:'🏺',type:'amulet',int:+16,def:+10},
+    {name:'Ring of the Void',icon:'♾️',type:'ring',atk:+35,int:+12,crit:+8}
+  ],
+  void: [
+    {name:'Nullblade',icon:'🌀',type:'weapon',atk:+100,str:+20,crit:+20},
+    {name:'Helm of the Abyss',icon:'🕳️',type:'helmet',def:+70,vit:+16},
+    {name:'Voidweave Shroud',icon:'🫧',type:'chest',def:+75,int:+12},
+    {name:'Steps of Nothing',icon:'⬛',type:'boots',def:+60,dex:+20,crit:+15},
+    {name:'Null-Stone Pendant',icon:'🔮',type:'amulet',int:+24,atk:+20},
+    {name:'Ouroboros Band',icon:'🌑',type:'ring',atk:+50,int:+16,crit:+12}
+  ]
+};
 const RARITY_COLORS = { common:'#8b7355', uncommon:'#2d8016', rare:'#0051ba', epic:'#6b21a8', legendary:'#ff8c00', void:'#e0e0ff' };
 const RARITY_WEIGHTS = { easy: { common:60, uncommon:30, rare:10, epic:0, legendary:0, void:0 }, normal: { common:40, uncommon:28, rare:20, epic:9, legendary:3, void:0 }, hard: { common:25, uncommon:22, rare:24, epic:16, legendary:10, void:3 } };
 const COMBAT_MESSAGES = { player: ['{name} strikes for {dmg} damage!','{name} unleashes a power attack — {dmg} DMG!','{name} finds an opening! {dmg} damage dealt.','{name} slashes with precision — {dmg} DMG!'], boss: ['Boss retaliates for {dmg} damage!','Boss smashes with brutal force — {dmg} DMG!',"Boss's attack connects for {dmg} damage!",'Boss unleashes a wild swing — {dmg} DMG!'], floor: ['Entering floor {n}...','The darkness grows on floor {n}...','Floor {n} — something lurks ahead.','Floor {n} cleared. Moving deeper...'] };
@@ -550,7 +603,12 @@ function showLootModal(results) {
   document.getElementById('modal-level').textContent = 'LVL ' + (character.level || 1);
   const grid = document.getElementById('loot-grid');
   if (!results.loot || results.loot.length === 0) { grid.innerHTML = '<div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center;padding:20px;grid-column:1/-1">NO LOOT DROPPED</div>'; }
-  else { grid.innerHTML = results.loot.map(item => ` <div class="loot-item" style="--item-rarity:${RARITY_COLORS[item.rarity]}"> <span class="loot-item-new">NEW</span> <span class="loot-item-icon">${item.icon}</span> <div class="loot-item-name">${item.name}</div> <div class="loot-item-rarity">${item.rarity.toUpperCase()}</div> </div> `).join(''); }
+  else { 
+    grid.innerHTML = results.loot.map(item => {
+      const stats = ['str','dex','int','vit','atk','def','crit','critdmg'].filter(s => item[s]).map(s => `<div class="loot-stat-row"><span class="loot-stat-name">${s.toUpperCase()}</span><span class="loot-stat-val">${item[s]>0?'+':''}${item[s]}</span></div>`).join('');
+      return `<div class="loot-item" style="--item-rarity:${RARITY_COLORS[item.rarity]}"> <span class="loot-item-new">NEW</span> <span class="loot-item-icon">${item.icon}</span> <div class="loot-item-name">${item.name}</div> <div class="loot-item-rarity">${item.rarity.toUpperCase()}</div> ${stats?'<div class="loot-item-stats">'+stats+'</div>':''} </div>`;
+    }).join(''); 
+  }
   addLootToInventory(results.loot);
   document.getElementById('loot-modal').classList.add('active');
 }
