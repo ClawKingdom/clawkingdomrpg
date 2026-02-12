@@ -26,11 +26,61 @@ const DUNGEON_CONFIG = {
   hard: { minLvl: 30, maxLvl: 60, xpMin: 1000, xpMax: 2000, voidMin: 50, voidMax: 120 }
 };
 
+// Item stat scaling by rarity
+const ITEM_STATS = {
+  common: { atk: 5, def: 3, str: 1, dex: 1, vit: 1 },
+  uncommon: { atk: 12, def: 8, str: 2, dex: 2, vit: 2 },
+  rare: { atk: 25, def: 15, str: 4, dex: 4, vit: 3 },
+  epic: { atk: 45, def: 30, str: 6, dex: 6, vit: 5 },
+  legendary: { atk: 70, def: 50, str: 10, dex: 10, vit: 8 }
+};
+
+const ITEM_NAMES = {
+  common: ['Iron Sword', 'Wooden Shield', 'Leather Vest', 'Bronze Ring', 'Stone Amulet'],
+  uncommon: ['Steel Blade', 'Iron Plate', 'Silver Ring', 'Crystal Amulet', 'Enchanted Cloak'],
+  rare: ['Mythril Sword', 'Mithril Armor', 'Sapphire Ring', 'Holy Amulet', 'Arcane Robe'],
+  epic: ['Sundering Axe', 'Dragon Scale', 'Gold Ring', 'Divine Amulet', 'Celestial Cape'],
+  legendary: ['Nullblade', 'Void Armor', 'Eternal Ring', 'Cosmic Amulet', 'Legendary Mantle']
+};
+
 // Helpers
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function getRaidsToday(wallet) {
   const today = new Date().toISOString().slice(0, 10);
   return (raids.get(wallet) || []).filter(r => r.date === today).length;
+}
+function generateLoot(difficulty) {
+  const rarityRoll = rand(1, 100);
+  let rarity;
+  if (difficulty === 'easy') {
+    rarity = rarityRoll <= 60 ? 'common' : rarityRoll <= 90 ? 'uncommon' : 'rare';
+  } else if (difficulty === 'normal') {
+    rarity = rarityRoll <= 40 ? 'common' : rarityRoll <= 68 ? 'uncommon' : rarityRoll <= 88 ? 'rare' : rarityRoll <= 97 ? 'epic' : 'legendary';
+  } else {
+    rarity = rarityRoll <= 25 ? 'common' : rarityRoll <= 47 ? 'uncommon' : rarityRoll <= 71 ? 'rare' : rarityRoll <= 87 ? 'epic' : rarityRoll <= 97 ? 'legendary' : 'legendary';
+  }
+  const statMultiplier = ['common', 'uncommon', 'rare', 'epic', 'legendary'].indexOf(rarity) + 1;
+  const baseStats = ITEM_STATS[rarity];
+  const finalStats = {};
+  Object.keys(baseStats).forEach(k => { finalStats[k] = baseStats[k] + rand(-1, 3); });
+  
+  const itemNames = ITEM_NAMES[rarity];
+  const name = itemNames[rand(0, itemNames.length - 1)];
+  
+  return {
+    id: 'item_' + Math.random().toString(36).substr(2, 9),
+    name,
+    rarity,
+    icon: '⚔️',
+    str: finalStats.str || 0,
+    dex: finalStats.dex || 0,
+    int: 0,
+    vit: finalStats.vit || 0,
+    atk: finalStats.atk || 0,
+    def: finalStats.def || 0,
+    crit: Math.floor(finalStats.dex * 0.5) || 0,
+    critDmg: 150 + (finalStats.dex || 0)
+  };
 }
 
 // ==================== CHARACTER ENDPOINTS ====================
@@ -51,6 +101,8 @@ app.post('/character/create', (req, res) => {
     xp: 0,
     stats: { ...baseStats },
     equipment: { weapon: 'iron_sword', helmet: 'steel_helmet', chest: 'leather_armor', offhand: 'wooden_shield' },
+    inventory: [],
+    potions: 0,
     createdAt: new Date().toISOString()
   };
   
@@ -124,6 +176,18 @@ app.post('/raid/start', (req, res) => {
   const xpGained = fullXp > 0 ? fullXp : Math.floor(rand(cfg.xpMin, cfg.xpMax) * 0.25); // 25% XP even on loss
   const voidGained = won ? rand(cfg.voidMin, cfg.voidMax) : 0;
   
+  // Generate loot with stats
+  const lootItems = [];
+  if (won) {
+    const numItems = rand(1, 3);
+    for (let i = 0; i < numItems; i++) {
+      lootItems.push(generateLoot(difficulty));
+      if (!char.inventory) char.inventory = [];
+      char.inventory.push(generateLoot(difficulty));
+    }
+    char.potions = 1; // Restore potion for next raid
+  }
+  
   // Apply XP (both victory and defeat give XP)
   char.xp += xpGained;
   while (char.xp >= 1000 * char.level) {
@@ -150,7 +214,7 @@ app.post('/raid/start', (req, res) => {
     won,
     xp: xpGained,
     void: voidGained,
-    loot: won ? Array(rand(1, 3)).fill(0).map(() => ({ icon: '⚔️', rarity: ['common','uncommon','rare'][rand(0,2)] })) : [],
+    loot: lootItems,
     boss_defeated: won ? 'Boss slain!' : 'Defeated...',
     newLevel: char.level,
     character: char
@@ -160,6 +224,79 @@ app.post('/raid/start', (req, res) => {
 app.get('/raid/history/:wallet', (req, res) => {
   const raidList = raids.get(req.params.wallet) || [];
   res.json({ raids: raidList.slice(0, 20) });
+});
+
+// ==================== EQUIPMENT ENDPOINTS ====================
+
+app.post('/equipment/equip/:wallet', (req, res) => {
+  const { itemId } = req.body;
+  const char = characters.get(req.params.wallet);
+  if (!char) return res.json({ error: 'Character not found' });
+  
+  const itemIndex = char.inventory ? char.inventory.findIndex(i => i.id === itemId) : -1;
+  if (itemIndex === -1) return res.json({ error: 'Item not found in inventory' });
+  
+  const item = char.inventory[itemIndex];
+  
+  // Apply item bonuses to character stats
+  char.stats.str = (char.stats.str || 0) + (item.str || 0);
+  char.stats.dex = (char.stats.dex || 0) + (item.dex || 0);
+  char.stats.int = (char.stats.int || 0) + (item.int || 0);
+  char.stats.vit = (char.stats.vit || 0) + (item.vit || 0);
+  char.stats.atk = (char.stats.atk || 0) + (item.atk || 0);
+  char.stats.def = (char.stats.def || 0) + (item.def || 0);
+  
+  // Remove from inventory and set as equipped
+  char.inventory.splice(itemIndex, 1);
+  if (!char.equipped) char.equipped = [];
+  char.equipped.push(item);
+  
+  res.json({ status: 'equipped', character: char });
+});
+
+app.post('/equipment/unequip/:wallet', (req, res) => {
+  const { itemId } = req.body;
+  const char = characters.get(req.params.wallet);
+  if (!char) return res.json({ error: 'Character not found' });
+  
+  const itemIndex = char.equipped ? char.equipped.findIndex(i => i.id === itemId) : -1;
+  if (itemIndex === -1) return res.json({ error: 'Item not equipped' });
+  
+  const item = char.equipped[itemIndex];
+  
+  // Remove item bonuses from character stats
+  char.stats.str = Math.max(0, (char.stats.str || 0) - (item.str || 0));
+  char.stats.dex = Math.max(0, (char.stats.dex || 0) - (item.dex || 0));
+  char.stats.int = Math.max(0, (char.stats.int || 0) - (item.int || 0));
+  char.stats.vit = Math.max(0, (char.stats.vit || 0) - (item.vit || 0));
+  char.stats.atk = Math.max(0, (char.stats.atk || 0) - (item.atk || 0));
+  char.stats.def = Math.max(0, (char.stats.def || 0) - (item.def || 0));
+  
+  // Remove from equipped and add to inventory
+  char.equipped.splice(itemIndex, 1);
+  if (!char.inventory) char.inventory = [];
+  char.inventory.push(item);
+  
+  res.json({ status: 'unequipped', character: char });
+});
+
+app.post('/raid/use-potion/:wallet', (req, res) => {
+  const char = characters.get(req.params.wallet);
+  if (!char) return res.json({ error: 'Character not found' });
+  
+  if ((char.potions || 0) <= 0) {
+    return res.json({ error: 'No potions available' });
+  }
+  
+  const maxHp = (char.stats.vit || 10) * 12;
+  const currentHp = (char.lastHp || maxHp);
+  const healAmount = Math.floor(maxHp * 0.3);
+  const newHp = Math.min(maxHp, currentHp + healAmount);
+  
+  char.lastHp = newHp;
+  char.potions -= 1;
+  
+  res.json({ status: 'potion_used', healed: newHp - currentHp, currentHp: newHp, maxHp, potions_remaining: char.potions });
 });
 
 // ==================== UTILITY ENDPOINTS ====================
