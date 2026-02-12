@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLAW KINGDOM — DUNGEONS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root { --purple: #a855f7; --purple-dark: #6b21a8; --bg-light: #d4d4e0; --bg-dark: #b8b8cc; --panel: #1a1a2e; --text: #2a2a3e; --green: #10b981; --rarity-common: #8b7355; --rarity-uncommon: #2d5016; --rarity-rare: #0051ba; --rarity-epic: #6b21a8; --rarity-legendary: #ff8c00; --rarity-void: #e0e0ff; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Press Start 2P', cursive; background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-dark) 100%); color: var(--text); min-height: 100vh; line-height: 1.6; overflow-x: hidden; }
+body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999; background: repeating-linear-gradient( 0deg, transparent, transparent 3px, rgba(0,0,0,0.03) 3px, rgba(0,0,0,0.03) 4px ); }
+header { display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; border-bottom: 4px solid var(--text); background: rgba(255,255,255,0.25); flex-wrap: wrap; gap: 12px; }
+.logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.logo-box { width: 44px; height: 44px; background: var(--purple); border: 3px solid var(--text); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.logo-text { font-size: 14px; color: var(--purple); letter-spacing: 2px; }
+.header-right { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.header-btn { background: var(--panel); color: #fff; padding: 10px 16px; border: 3px solid var(--text); cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 8px; letter-spacing: 1px; transition: all 0.2s; text-decoration: none; display: inline-block; }
+.header-btn:hover { background: var(--purple); transform: translateY(-2px); }
+.header-btn.green { background: #14532d; }
+.header-btn.green:hover { background: var(--green); }
+.page { max-width: 1400px; margin: 0 auto; padding: 30px 24px; }
+.page-title { text-align: center; font-size: 36px; color: var(--purple); text-shadow: 3px 3px 0 var(--text), 6px 6px 0 rgba(0,0,0,0.2); letter-spacing: 6px; margin-bottom: 8px; }
+.page-subtitle { text-align: center; font-size: 9px; color: var(--text); letter-spacing: 3px; margin-bottom: 36px; opacity: 0.7; }
+.stamina-row { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 36px; flex-wrap: wrap; }
+.stamina-label { font-size: 9px; color: var(--text); }
+.stamina-pips { display: flex; gap: 8px; }
+.pip { width: 28px; height: 28px; border: 3px solid var(--text); background: var(--panel); position: relative; transition: background 0.3s; }
+.pip.filled { background: var(--purple); }
+.pip.filled::after { content: '⚡'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.stamina-timer { font-size: 8px; color: var(--purple); border: 2px solid var(--purple); padding: 6px 10px; background: rgba(168,85,247,0.1); }
+.dungeon-layout { display: grid; grid-template-columns: 280px 1fr 280px; gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .dungeon-layout { grid-template-columns: 1fr 1fr; } .center-col { grid-column: 1 / -1; order: -1; } }
+@media (max-width: 680px) { .dungeon-layout { grid-template-columns: 1fr; } }
+.panel { background: rgba(255,255,255,0.4); border: 4px solid var(--text); padding: 20px; }
+.panel-dark { background: var(--panel); border: 4px solid var(--text); padding: 20px; }
+.panel-title { font-size: 10px; color: var(--purple); letter-spacing: 2px; text-align: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 3px solid var(--purple); }
+.char-avatar { width: 100%; aspect-ratio: 1; background: var(--panel); border: 4px solid var(--purple); display: flex; align-items: center; justify-content: center; font-size: 80px; margin-bottom: 16px; }
+.char-name { text-align: center; font-size: 14px; color: var(--purple); margin-bottom: 6px; }
+.char-class { text-align: center; font-size: 9px; color: #ca8a04; margin-bottom: 12px; }
+.xp-bar-wrap { background: #000; border: 3px solid var(--text); height: 18px; margin-bottom: 4px; position: relative; overflow: hidden; }
+.xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--purple-dark), var(--purple)); transition: width 0.6s ease; }
+.xp-label { text-align: center; font-size: 7px; color: var(--text); margin-bottom: 16px; }
+.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 2px dashed rgba(0,0,0,0.15); font-size: 8px; }
+.stat-row:last-child { border-bottom: none; }
+.stat-name { color: var(--text); }
+.stat-value { color: var(--purple); font-size: 10px; }
+#dungeon-scene { background: var(--panel); border: 4px solid var(--text); aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-bottom: 16px; }
+.scene-bg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.dungeon-grid { display: grid; grid-template-columns: repeat(16, 1fr); grid-template-rows: repeat(9, 1fr); width: 100%; height: 100%; position: absolute; inset: 0; }
+.tile-floor { background: #16132a; }
+.tile-wall { background: #0d0b1a; border: 1px solid #1e1b36; }
+.tile-highlight { background: #1e1b36; }
+.scene-entities { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 10% 12%; z-index: 2; }
+.entity { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.entity-sprite { font-size: clamp(28px, 6vw, 56px); filter: drop-shadow(0 0 8px var(--purple)); animation: floatBob 2s ease-in-out infinite; }
+.entity-sprite.boss { filter: drop-shadow(0 0 12px #ef4444); animation: floatBob 2s ease-in-out infinite reverse; }
+@keyframes floatBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.entity-hp-bar { width: 80px; height: 10px; background: #000; border: 2px solid rgba(255,255,255,0.3); }
+.entity-hp-fill { height: 100%; background: var(--green); transition: width 0.4s ease; }
+.entity-hp-fill.enemy { background: #ef4444; }
+.entity-label { font-size: 6px; color: rgba(255,255,255,0.5); letter-spacing: 1px; }
+.vs-badge { font-size: clamp(14px, 3vw, 28px); color: #ff8c00; text-shadow: 2px 2px 0 #000, 0 0 20px #ff8c00; letter-spacing: 4px; z-index: 3; }
+@keyframes attackFlash { 0%,100% { filter: brightness(1); } 50% { filter: brightness(3) saturate(2); } }
+.attacking { animation: attackFlash 0.3s ease; }
+.scene-idle-text { z-index: 4; text-align: center; }
+.scene-idle-text h2 { font-size: clamp(12px, 2vw, 20px); color: var(--purple); text-shadow: 2px 2px 0 #000; letter-letters: 3px; margin-bottom: 12px; }
+.scene-idle-text p { font-size: clamp(6px, 1vw, 9px); color: rgba(255,255,255,0.4); }
+#combat-log { background: #000; border: 3px solid var(--text); height: 130px; overflow-y: auto; padding: 10px; margin-bottom: 16px; font-size: 7px; color: #0f0; font-family: 'Press Start 2P', cursive; line-height: 1.8; scroll-behavior: smooth; }
+#combat-log .log-line { margin-bottom: 2px; }
+#combat-log .log-line.player { color: #a78bfa; }
+#combat-log .log-line.enemy { color: #f87171; }
+#combat-log .log-line.system { color: #fbbf24; }
+#combat-log .log-line.loot { color: #ff8c00; }
+#combat-log .log-line.xp { color: #34d399; }
+.dungeon-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.dungeon-btn { background: var(--panel); border: 4px solid var(--text); padding: 16px 10px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 8px; color: #fff; text-align: center; transition: all 0.2s; position: relative; overflow: hidden; }
+.dungeon-btn::before { content: ''; position: absolute; inset: 0; background: var(--diff-color, var(--purple)); opacity: 0; transition: opacity 0.2s; }
+.dungeon-btn:hover::before { opacity: 0.25; }
+.dungeon-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); border-color: var(--diff-color, var(--purple)); }
+.dungeon-btn:active { transform: translateY(0); }
+.dungeon-btn.selected { border-color: var(--diff-color, var(--purple)); background: #2a2a4e; }
+.dungeon-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.dungeon-btn-icon { font-size: 28px; display: block; margin-bottom: 8px; position: relative; z-index: 1; }
+.dungeon-btn-name { display: block; letter-spacing: 2px; margin-bottom: 6px; position: relative; z-index: 1; }
+.dungeon-btn-meta { display: block; font-size: 6px; opacity: 0.6; position: relative; z-index: 1; }
+.dungeon-btn-reward { display: block; font-size: 6px; position: relative; z-index: 1; margin-top: 4px; }
+.dungeon-btn.easy { --diff-color: #22c55e; }
+.dungeon-btn.normal{ --diff-color: #f59e0b; }
+.dungeon-btn.hard { --diff-color: #ef4444; }
+.raid-btn { width: 100%; background: var(--purple-dark); color: #fff; border: 4px solid var(--purple); padding: 16px; font-family: 'Press Start 2P', cursive; font-size: 11px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; position: relative; overflow: hidden; }
+.raid-btn::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0); width: 100%; height: 100%; background: rgba(255,255,255,0.1); border-radius: 50%; transition: transform 0.4s; }
+.raid-btn:hover { background: var(--purple); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(168,85,247,0.5); }
+.raid-btn:hover::after { transform: translate(-50%,-50%) scale(2); }
+.raid-btn:disabled { background: #333; border-color: #555; cursor: not-allowed; transform: none; box-shadow: none; }
+.raid-progress-wrap { background: #000; border: 3px solid var(--text); height: 22px; margin-bottom: 12px; display: none; position: relative; overflow: hidden; }
+.raid-progress-fill { height: 100%; background: linear-gradient(90deg, #6b21a8, #a855f7, #c084fc); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; transition: width 0.5s ease; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.raid-progress-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 7px; color: #fff; z-index: 2; letter-spacing: 1px; }
+.raid-history-list { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
+.raid-entry { background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.1); padding: 12px; font-size: 7px; transition: border-color 0.2s; }
+.raid-entry:hover { border-color: var(--purple); }
+.raid-entry-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.raid-entry-diff { font-size: 6px; padding: 2px 6px; border: 1px solid currentColor; }
+.diff-easy { color: #22c55e; }
+.diff-normal { color: #f59e0b; }
+.diff-hard { color: #ef4444; }
+.raid-entry-result { font-size: 6px; }
+.raid-entry-loot { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.loot-badge { font-size: 5px; padding: 2px 5px; border: 1px solid currentColor; }
+.empty-raids { text-align: center; font-size: 8px; color: rgba(255,255,255,0.3); padding: 40px 0; line-height: 2.5; }
+#loot-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+#loot-modal.active { display: flex; animation: modalIn 0.3s ease; }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.modal-box { background: var(--panel); border: 6px solid var(--purple); max-width: 680px; width: 100%; padding: 32px; position: relative; box-shadow: 0 0 60px rgba(168,85,247,0.4); }
+.modal-title { font-size: 20px; color: #ff8c00; text-align: center; text-shadow: 2px 2px 0 #000, 0 0 30px #ff8c00; letter-spacing: 4px; margin-bottom: 24px; }
+.modal-rewards { display: flex; gap: 16px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+.reward-chip { background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2); padding: 10px 16px; text-align: center; }
+.reward-chip-val { font-size: 18px; display: block; margin-bottom: 4px; }
+.reward-chip-val.xp-val { color: #34d399; }
+.reward-chip-val.void-val { color: var(--purple); }
+.reward-chip-label { font-size: 7px; color: rgba(255,255,255,0.5); }
+.modal-loot-title { font-size: 9px; color: rgba(255,255,255,0.6); letter-spacing: 2px; margin-bottom: 14px; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
+.loot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.loot-item { background: rgba(255,255,255,0.05); border: 3px solid var(--item-rarity, #8b7355); padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+.loot-item:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.5); background: rgba(255,255,255,0.1); }
+.loot-item-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+.loot-item-name { font-size: 7px; color: #fff; margin-bottom: 4px; }
+.loot-item-rarity { font-size: 6px; color: var(--item-rarity, #8b7355); letter-spacing: 1px; }
+.loot-item-new { position: absolute; top: -8px; right: -8px; background: #ff8c00; color: #000; font-size: 5px; padding: 3px 5px; border: 1px solid #000; }
+.modal-actions { display: flex; gap: 12px; justify-content: center; }
+.modal-btn { background: var(--panel); color: #fff; padding: 14px 24px; border: 3px solid var(--purple); cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 9px; letter-spacing: 1px; transition: all 0.2s; }
+.modal-btn:hover { background: var(--purple); transform: translateY(-2px); }
+.modal-btn.primary { background: var(--purple-dark); }
+.modal-btn.primary:hover { background: var(--purple); }
+#levelup-banner { display: none; position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(90deg, #6b21a8, #ff8c00, #6b21a8); background-size: 400% 100%; animation: rainbowSlide 1s linear infinite; color: #fff; text-align: center; padding: 16px; font-size: 16px; letter-spacing: 6px; z-index: 2000; text-shadow: 2px 2px 0 #000; }
+@keyframes rainbowSlide { 0% { background-position: 0% 0; } 100% { background-position: 400% 0; } }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0d0b1a; }
+::-webkit-scrollbar-thumb { background: var(--purple); }
+@keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.panel, .panel-dark { animation: slideIn 0.4s ease both; }
+#no-char-screen { display: none; text-align: center; padding: 80px 20px; }
+#no-char-screen h2 { font-size: 20px; color: var(--purple); margin-bottom: 20px; }
+#no-char-screen p { font-size: 9px; color: var(--text); margin-bottom: 30px; line-height: 2.5; }
+</style>
+</head>
+<body>
+
+<div id="levelup-banner">⚡ LEVEL UP! ⚡</div>
+
+<header>
+<a class="logo" href="index.html">
+<div class="logo-box">🦞</div>
+<span class="logo-text">CLAW KINGDOM</span>
+</a>
+<div class="header-right">
+<a href="profile-v2.html" class="header-btn">◀ PROFILE</a>
+<button class="header-btn green" id="wallet-display">WALLET</button>
+</div>
+</header>
+
+<div class="page">
+
+<div id="no-char-screen">
+<h2>NO HERO FOUND</h2>
+<p>You must create a character before<br>entering the dungeons.</p>
+<a href="character-creation.html" class="modal-btn primary">CREATE CHARACTER</a>
+</div>
+
+<div id="main-content">
+<h1 class="page-title">DUNGEONS</h1>
+<p class="page-subtitle">CHOOSE YOUR FATE — 3 RAIDS PER 24 HOURS</p>
+
+<div class="stamina-row">
+<span class="stamina-label">STAMINA :</span>
+<div class="stamina-pips" id="stamina-pips">
+<div class="pip filled" id="pip-0"></div>
+<div class="pip filled" id="pip-1"></div>
+<div class="pip filled" id="pip-2"></div>
+</div>
+<div class="stamina-timer" id="stamina-timer" style="display:none">
+⏱ <span id="timer-text">00:00:00</span>
+</div>
+</div>
+
+<div class="dungeon-layout">
+
+<div class="panel">
+<div class="panel-title">HERO</div>
+<div class="char-avatar" id="char-avatar">⚔️</div>
+<div class="char-name" id="char-name">—</div>
+<div class="char-class" id="char-class">—</div>
+<div class="xp-bar-wrap">
+<div class="xp-bar-fill" id="xp-bar" style="width:0%"></div>
+</div>
+<div class="xp-label" id="xp-label">0 / 1000 XP</div>
+<div id="char-stats">
+<div class="stat-row"><span class="stat-name">STR</span><span class="stat-value" id="stat-str">—</span></div>
+<div class="stat-row"><span class="stat-name">DEX</span><span class="stat-value" id="stat-dex">—</span></div>
+<div class="stat-row"><span class="stat-name">INT</span><span class="stat-value" id="stat-int">—</span></div>
+<div class="stat-row"><span class="stat-name">VIT</span><span class="stat-value" id="stat-vit">—</span></div>
+<div class="stat-row" style="margin-top:8px;border-top:2px solid var(--purple);padding-top:8px"><span class="stat-name" style="color:#f59e0b">ATK</span><span class="stat-value" style="color:#f59e0b" id="stat-atk">—</span></div>
+<div class="stat-row"><span class="stat-name" style="color:#60a5fa">DEF</span><span class="stat-value" style="color:#60a5fa" id="stat-def">—</span></div>
+<div class="stat-row"><span class="stat-name" style="color:#f87171">CRIT%</span><span class="stat-value" style="color:#f87171" id="stat-crit">—</span></div>
+<div class="stat-row"><span class="stat-name" style="color:#fb923c">CRIT DMG</span><span class="stat-value" style="color:#fb923c" id="stat-critdmg">—</span></div>
+</div>
+</div>
+
+<div class="center-col">
+
+<div id="dungeon-scene">
+<div class="dungeon-grid" id="scene-grid"></div>
+<div class="scene-idle-text" id="scene-idle">
+<h2>⚔ SELECT A DUNGEON</h2>
+<p>Choose difficulty below to enter</p>
+</div>
+<div class="scene-entities" id="scene-battle" style="display:none">
+<div class="entity" id="hero-entity">
+<div class="entity-sprite" id="hero-sprite">⚔️</div>
+<div class="entity-hp-bar"><div class="entity-hp-fill" id="hero-hp" style="width:100%"></div></div>
+<div class="entity-label" id="hero-hp-label">HP</div>
+</div>
+<div class="vs-badge">VS</div>
+<div class="entity" id="boss-entity">
+<div class="entity-sprite boss" id="boss-sprite">💀</div>
+<div class="entity-hp-bar"><div class="entity-hp-fill enemy" id="boss-hp" style="width:100%"></div></div>
+<div class="entity-label" id="boss-name-label">BOSS</div>
+</div>
+</div>
+</div>
+
+<div id="combat-log">
+<div class="log-line system">> AWAITING DUNGEON ENTRY...</div>
+</div>
+
+<div class="raid-progress-wrap" id="progress-wrap">
+<div class="raid-progress-fill" id="progress-fill" style="width:0%"></div>
+<div class="raid-progress-label" id="progress-label">RAID IN PROGRESS...</div>
+</div>
+
+<div class="dungeon-btns" id="dungeon-btns">
+<button class="dungeon-btn easy" onclick="selectDungeon('easy')" id="btn-easy">
+<span class="dungeon-btn-icon">🌿</span>
+<span class="dungeon-btn-name">EASY</span>
+<span class="dungeon-btn-meta">LVL 1–15 • 3 FLOORS</span>
+<span class="dungeon-btn-reward" style="color:#22c55e">+200–400 XP • COMMON→RARE</span>
+</button>
+<button class="dungeon-btn normal" onclick="selectDungeon('normal')" id="btn-normal">
+<span class="dungeon-btn-icon">🔥</span>
+<span class="dungeon-btn-name">NORMAL</span>
+<span class="dungeon-btn-meta">LVL 15–30 • 5 FLOORS</span>
+<span class="dungeon-btn-reward" style="color:#f59e0b">+500–900 XP • →LEGENDARY</span>
+</button>
+<button class="dungeon-btn hard" onclick="selectDungeon('hard')" id="btn-hard">
+<span class="dungeon-btn-icon">💀</span>
+<span class="dungeon-btn-name">HARD</span>
+<span class="dungeon-btn-meta">LVL 30–60 • 8 FLOORS</span>
+<span class="dungeon-btn-reward" style="color:#ef4444">+1000–2000 XP • →VOID</span>
+</button>
+</div>
+
+<button class="raid-btn" id="raid-btn" onclick="startRaid()" disabled>
+▶ SELECT A DUNGEON
+</button>
+
+</div>
+
+<div class="panel-dark">
+<div class="panel-title">RAID HISTORY</div>
+<div class="raid-history-list" id="raid-history-list">
+<div class="empty-raids">
+NO RAIDS YET<br><br>
+ENTER A DUNGEON<br>
+TO BEGIN
+</div>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<div id="loot-modal">
+<div class="modal-box">
+<div class="modal-title" id="modal-title">⚡ VICTORY! ⚡</div>
+<div class="modal-rewards">
+<div class="reward-chip">
+<span class="reward-chip-val xp-val" id="modal-xp">+0</span>
+<span class="reward-chip-label">XP EARNED</span>
+</div>
+<div class="reward-chip">
+<span class="reward-chip-val void-val" id="modal-void">+0</span>
+<span class="reward-chip-label">$VOID EARNED</span>
+</div>
+<div class="reward-chip">
+<span class="reward-chip-val" id="modal-level">LVL 1</span>
+<span class="reward-chip-label">CURRENT LEVEL</span>
+</div>
+</div>
+<div class="modal-loot-title">LOOT DROPPED</div>
+<div class="loot-grid" id="loot-grid"></div>
+<div class="modal-actions">
+<button class="modal-btn" onclick="closeModal()">CONTINUE</button>
+<a href="profile-v2.html" class="modal-btn primary">VIEW PROFILE</a>
+</div>
+</div>
+</div>
+
+<script src="dungeons.js"></script>
+<script>
+const CLASS_SPRITES = { warrior: '🗡️', mage: '🔮', rogue: '🗡️', paladin: '⚔️', ranger: '🏹', bard: '🎵' };
+const CLASS_BASE_STATS = { warrior: { str:14, dex:8, int:4, vit:12 }, mage: { str:4, dex:10, int:16, vit:6 }, rogue: { str:10, dex:14, int:6, vit:8 }, paladin: { str:10, dex:8, int:10, vit:10 }, ranger: { str:10, dex:14, int:6, vit:8 }, bard: { str:6, dex:12, int:10, vit:10 } };
+const DUNGEON_CONFIGS = { easy: { minLvl:1, maxLvl:15, level:1, floors:3, xpMin:200, xpMax:400, voidMin:5, voidMax:15, items:[1,2], bosses:['🐀','🦎','🐍'], bossNames:['Giant Rat','Forest Lizard','Cave Serpent'] }, normal: { minLvl:15, maxLvl:30, level:2, floors:5, xpMin:500, xpMax:900, voidMin:15, voidMax:40, items:[2,3], bosses:['💀','🦇','🧟'], bossNames:['Skeleton Lord','Vampire Bat','Dungeon Zombie'] }, hard: { minLvl:30, maxLvl:60, level:3, floors:8, xpMin:1000, xpMax:2000, voidMin:50, voidMax:120, items:[3,4], bosses:['🐉','👿','💀'], bossNames:['Ancient Dragon','Demon Prince','Lich King'] } };
+const LOOT_POOL = { common: [{name:'Iron Shortsword',icon:'🗡️',type:'weapon'},{name:'Leather Cap',icon:'🪖',type:'helmet'},{name:'Frayed Cloak',icon:'🧥',type:'chest'},{name:'Worn Boots',icon:'👞',type:'boots'},{name:'Health Potion',icon:'🧪',type:'consumable'},{name:'Rope Coil',icon:'🪢',type:'misc'}], uncommon: [{name:'Steel Longsword',icon:'⚔️',type:'weapon'},{name:'Chain Coif',icon:'⛑️',type:'helmet'},{name:'Brigandine Vest',icon:'🎽',type:'chest'},{name:'Shadowstep Boots',icon:'👢',type:'boots'},{name:'Mana Crystal',icon:'💎',type:'accessory'},{name:'Scout Ring',icon:'💍',type:'ring'}], rare: [{name:"Bladesinger's Rapier",icon:'🌟',type:'weapon'},{name:'Arcane Helm',icon:'🪄',type:'helmet'},{name:'Dragonscale Mail',icon:'🛡️',type:'chest'},{name:'Windwalker Boots',icon:'💨',type:'boots'},{name:'Eye of the Seer',icon:'👁️',type:'amulet'},{name:"Wizard's Signet",icon:'💍',type:'ring'}], epic: [{name:'Voidcleaver',icon:'🌑',type:'weapon'},{name:'Crown of the Fallen',icon:'👑',type:'helmet'},{name:"Demon's Embrace",icon:'🖤',type:'chest'},{name:"Banshee's Step",icon:'💀',type:'boots'},{name:'Void Pendant',icon:'⚫',type:'amulet'},{name:'Eternal Flame Band',icon:'🔥',type:'ring'}], legendary: [{name:'Sundering Axe of Ruin',icon:'⚡',type:'weapon'},{name:'Mythbreaker Crown',icon:'✨',type:'helmet'},{name:'Zodiac Plate',icon:'🌌',type:'chest'},{name:'Starfall Greaves',icon:'🌠',type:'boots'},{name:'Amulet of the Ancients',icon:'🏺',type:'amulet'},{name:'Ring of the Void',icon:'♾️',type:'ring'}], void: [{name:'Nullblade',icon:'🌀',type:'weapon'},{name:'Helm of the Abyss',icon:'🕳️',type:'helmet'},{name:'Voidweave Shroud',icon:'🫧',type:'chest'},{name:'Steps of Nothing',icon:'⬛',type:'boots'},{name:'Null-Stone Pendant',icon:'🔮',type:'amulet'},{name:'Ouroboros Band',icon:'🌑',type:'ring'}] };
+const RARITY_COLORS = { common:'#8b7355', uncommon:'#2d8016', rare:'#0051ba', epic:'#6b21a8', legendary:'#ff8c00', void:'#e0e0ff' };
+const RARITY_WEIGHTS = { easy: { common:60, uncommon:30, rare:10, epic:0, legendary:0, void:0 }, normal: { common:40, uncommon:28, rare:20, epic:9, legendary:3, void:0 }, hard: { common:25, uncommon:22, rare:24, epic:16, legendary:10, void:3 } };
+const COMBAT_MESSAGES = { player: ['{name} strikes for {dmg} damage!','{name} unleashes a power attack — {dmg} DMG!','{name} finds an opening! {dmg} damage dealt.','{name} slashes with precision — {dmg} DMG!'], boss: ['Boss retaliates for {dmg} damage!','Boss smashes with brutal force — {dmg} DMG!',"Boss's attack connects for {dmg} damage!",'Boss unleashes a wild swing — {dmg} DMG!'], floor: ['Entering floor {n}...','The darkness grows on floor {n}...','Floor {n} — something lurks ahead.','Floor {n} cleared. Moving deeper...'] };
+
+let character = null, selectedDifficulty = null, isRaiding = false, raidResults = null;
+
+window.addEventListener('DOMContentLoaded', () => {
+  buildSceneGrid();
+  character = loadCharacter();
+  if (!character) { document.getElementById('no-char-screen').style.display = 'block'; document.getElementById('main-content').style.display = 'none'; return; }
+  renderCharacter();
+  renderRaidHistory();
+  updateStaminaUI();
+  startStaminaTimer();
+  const wallet = localStorage.getItem('clawkingdom_wallet');
+  if (wallet) { const btn = document.getElementById('wallet-display'); btn.textContent = wallet.slice(0,6)+'...'+wallet.slice(-4); }
+});
+
+function buildSceneGrid() {
+  const grid = document.getElementById('scene-grid');
+  const pattern = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,0,0,0,0,0,0,2,2,0,0,0,0,0,0,1, 1,0,2,0,0,0,0,0,0,0,0,0,0,2,0,1, 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1, 1,0,2,0,0,0,0,0,0,0,0,0,0,2,0,1, 1,0,0,0,0,0,0,2,2,0,0,0,0,0,0,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1];
+  pattern.forEach(t => { const tile = document.createElement('div'); tile.className = t === 1 ? 'tile-wall' : t === 2 ? 'tile-highlight' : 'tile-floor'; grid.appendChild(tile); });
+}
+
+function loadCharacter() { try { const raw = localStorage.getItem('clawkingdom_character'); if (!raw) return null; const c = JSON.parse(raw); if (!c.stats) { const base = CLASS_BASE_STATS[c.class] || CLASS_BASE_STATS.warrior; const lvl = (c.level || 1) - 1; c.stats = { str: base.str + lvl * 2, dex: base.dex + lvl * 2, int: base.int + lvl * 2, vit: base.vit + Math.floor(lvl * 1.5) }; } return c; } catch(e) { return null; } }
+
+function saveCharacter() { localStorage.setItem('clawkingdom_character', JSON.stringify(character)); }
+
+function renderCharacter() {
+  if (!character) return;
+  document.getElementById('char-avatar').textContent = CLASS_SPRITES[character.class] || '⚔️';
+  document.getElementById('char-name').textContent = character.name || 'HERO';
+  document.getElementById('char-class').textContent = (character.class || 'warrior').toUpperCase() + ' • LVL ' + (character.level || 1);
+  const lvl = character.level || 1;
+  const xp = character.xp || 0;
+  const xpNeeded = 1000 * lvl;
+  const pct = Math.min(100, Math.round(xp / xpNeeded * 100));
+  document.getElementById('xp-bar').style.width = pct + '%';
+  document.getElementById('xp-label').textContent = xp + ' / ' + xpNeeded + ' XP';
+  const stats = character.stats || CLASS_BASE_STATS[character.class] || {};
+  document.getElementById('stat-str').textContent = stats.str || '—';
+  document.getElementById('stat-dex').textContent = stats.dex || '—';
+  document.getElementById('stat-int').textContent = stats.int || '—';
+  document.getElementById('stat-vit').textContent = stats.vit || '—';
+  const atk = (stats.str || 10) * 2 + lvl;
+  const def = Math.floor((stats.vit || 8) * 1.5) + lvl;
+  const crit = Math.min(50, Math.floor((stats.dex || 8) * 0.5));
+  const critDmg = 150 + (stats.dex || 8);
+  document.getElementById('stat-atk').textContent = atk;
+  document.getElementById('stat-def').textContent = def;
+  document.getElementById('stat-crit').textContent = crit + '%';
+  document.getElementById('stat-critdmg').textContent = critDmg + '%';
+}
+
+function getRaidsUsed() { const data = JSON.parse(localStorage.getItem('clawkingdom_stamina') || '{"raids":[],"date":""}'); const today = new Date().toISOString().slice(0,10); if (data.date !== today) return { count: 0, lastTimestamp: 0 }; return { count: data.raids.length, lastTimestamp: data.raids[data.raids.length - 1] || 0 }; }
+
+function getRaidsRemaining() { return 3 - getRaidsUsed().count; }
+
+function recordRaidUsed() { const today = new Date().toISOString().slice(0,10); const data = JSON.parse(localStorage.getItem('clawkingdom_stamina') || '{"raids":[],"date":""}'); if (data.date !== today) { data.raids = []; data.date = today; } data.raids.push(Date.now()); localStorage.setItem('clawkingdom_stamina', JSON.stringify(data)); }
+
+function updateStaminaUI() { const remaining = getRaidsRemaining(); for (let i = 0; i < 3; i++) { const pip = document.getElementById('pip-' + i); pip.classList.toggle('filled', i < remaining); } if (remaining <= 0) { document.getElementById('stamina-timer').style.display = 'flex'; } }
+
+let timerInterval = null;
+function startStaminaTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const remaining = getRaidsRemaining();
+    const timerEl = document.getElementById('stamina-timer');
+    if (remaining > 0) { timerEl.style.display = 'none'; return; }
+    const data = JSON.parse(localStorage.getItem('clawkingdom_stamina') || '{"raids":[],"date":""}');
+    const firstRaid = data.raids[0] || Date.now();
+    const resetAt = new Date(new Date(data.date + 'T00:00:00').getTime() + 86400000).getTime();
+    const diff = Math.max(0, resetAt - Date.now());
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    document.getElementById('timer-text').textContent = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    timerEl.style.display = 'flex';
+  }, 1000);
+}
+
+function selectDungeon(diff) {
+  if (isRaiding) return;
+  if (getRaidsRemaining() <= 0) { logLine('system', '⚠ NO STAMINA — RAIDS RESET AT MIDNIGHT UTC'); return; }
+  const cfg = DUNGEON_CONFIGS[diff];
+  const playerLvl = character.level || 1;
+  if (playerLvl < cfg.minLvl) { logLine('system', '⚠ LEVEL TOO LOW — NEED LVL ' + cfg.minLvl + ' (YOU ARE LVL ' + playerLvl + ')'); return; }
+  if (playerLvl > cfg.maxLvl) { logLine('system', '⚠ OVERLEVEL — THIS DUNGEON IS FOR LVL ' + cfg.minLvl + '–' + cfg.maxLvl); }
+  selectedDifficulty = diff;
+  ['easy','normal','hard'].forEach(d => { document.getElementById('btn-' + d).classList.toggle('selected', d === diff); });
+  const raidBtn = document.getElementById('raid-btn');
+  raidBtn.textContent = '▶ ENTER ' + diff.toUpperCase() + ' DUNGEON';
+  raidBtn.disabled = false;
+  const icons = { easy:'🌿', normal:'🔥', hard:'💀' };
+  const colors = { easy:'#22c55e', normal:'#f59e0b', hard:'#ef4444' };
+  document.getElementById('scene-idle').innerHTML = '<h2 style="color:'+colors[diff]+'">'+icons[diff]+' '+diff.toUpperCase()+' DUNGEON</h2>' + '<p style="color:rgba(255,255,255,0.4)">' + cfg.floors + ' FLOORS — BOSS: ' + cfg.bossNames[Math.floor(Math.random()*cfg.bossNames.length)] + '</p>';
+  logLine('system', '> DUNGEON SELECTED: ' + diff.toUpperCase() + ' — ' + cfg.floors + ' FLOORS');
+}
+
+async function startRaid() {
+  if (!selectedDifficulty || isRaiding) return;
+  if (getRaidsRemaining() <= 0) { logLine('system', '⚠ OUT OF STAMINA! RAIDS RESET AT MIDNIGHT UTC.'); return; }
+  isRaiding = true;
+  disableControls(true);
+  recordRaidUsed();
+  updateStaminaUI();
+  clearLog();
+  logLine('system', '════════════════════════════');
+  logLine('system', ' ENTERING ' + selectedDifficulty.toUpperCase() + ' DUNGEON...');
+  logLine('system', '════════════════════════════');
+  const cfg = DUNGEON_CONFIGS[selectedDifficulty];
+  const bossIdx = Math.floor(Math.random() * cfg.bosses.length);
+  const bossSprite = cfg.bosses[bossIdx];
+  const bossName = cfg.bossNames[bossIdx];
+  switchToBattleView(bossSprite, bossName);
+  showProgressBar();
+  let apiLoot = null;
+  try { const agentId = character.wallet || character.name; const resp = await fetch('http://localhost:8000/raids/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent_id: agentId, dungeon_level: cfg.level }), signal: AbortSignal.timeout(4000) }); if (resp.ok) { apiLoot = await resp.json(); logLine('system', '✓ Backend connected'); } } catch(e) { logLine('system', '⚠ Backend offline — simulating locally'); }
+  const results = await simulateCombat(cfg, bossName);
+  raidResults = results;
+  const oldLevel = character.level || 1;
+  applyXP(results.xp);
+  const newLevel = character.level;
+  if (newLevel > oldLevel) triggerLevelUp(newLevel);
+  saveRaidHistory({ difficulty: selectedDifficulty, bossName, xp: results.xp, void: results.void, loot: results.loot, timestamp: Date.now(), won: results.won });
+  renderRaidHistory();
+  renderCharacter();
+  hideProgressBar();
+  await sleep(400);
+  showLootModal(results);
+  isRaiding = false;
+  disableControls(false);
+}
+
+async function simulateCombat(cfg, bossName) {
+  const floors = cfg.floors;
+  const stats = character.stats || {};
+  let heroHpPct = 100, bossHpPct = 100;
+  let heroHpEl = document.getElementById('hero-hp');
+  let bossHpEl = document.getElementById('boss-hp');
+  const heroAtk = (stats.str || 10) + Math.floor(Math.random() * 5);
+  const bossAtk = 8 + cfg.level * 4;
+  const heroMaxHp = (stats.vit || 10) * 10;
+  const bossMaxHp = 100 + cfg.level * 50;
+  let heroHp = heroMaxHp, bossHp = bossMaxHp;
+  for (let f = 1; f <= floors; f++) {
+    await sleep(350);
+    const floorMsg = pick(COMBAT_MESSAGES.floor).replace('{n}', f);
+    logLine('system', '▸ ' + floorMsg.toUpperCase());
+    updateProgress(Math.round(((f-1)/floors)*80));
+    if (f === floors) {
+      logLine('system', '⚠ BOSS ENCOUNTERED: ' + bossName.toUpperCase() + '!');
+      await sleep(300);
+      for (let round = 0; round < 8; round++) {
+        await sleep(280);
+        const playerDmg = heroAtk + Math.floor(Math.random() * heroAtk * 0.5);
+        bossHp = Math.max(0, bossHp - playerDmg);
+        bossHpPct = Math.max(0, (bossHp / bossMaxHp) * 100);
+        bossHpEl.style.width = bossHpPct + '%';
+        document.getElementById('hero-entity').classList.add('attacking');
+        setTimeout(() => document.getElementById('hero-entity').classList.remove('attacking'), 300);
+        const heroMsg = pick(COMBAT_MESSAGES.player).replace('{name}', character.name).replace('{dmg}', playerDmg);
+        logLine('player', ' ' + heroMsg);
+        if (bossHp <= 0) break;
+        await sleep(220);
+        const bossDmg = bossAtk + Math.floor(Math.random() * bossAtk * 0.3);
+        heroHp = Math.max(0, heroHp - bossDmg);
+        heroHpPct = Math.max(0, (heroHp / heroMaxHp) * 100);
+        heroHpEl.style.width = heroHpPct + '%';
+        document.getElementById('boss-entity').classList.add('attacking');
+        setTimeout(() => document.getElementById('boss-entity').classList.remove('attacking'), 300);
+        const bossMsg = pick(COMBAT_MESSAGES.boss).replace('{dmg}', bossDmg);
+        logLine('enemy', ' ' + bossMsg);
+        if (heroHp <= 0) { break; }
+      }
+    } else {
+      await sleep(200);
+      const dmg = heroAtk + Math.floor(Math.random() * 6);
+      logLine('player', ' ' + character.name + ' clears floor enemies — ' + dmg + ' total DMG');
+    }
+  }
+  await sleep(300);
+  updateProgress(100);
+  const won = heroHp > 0;
+  const xpGained = won ? rand(cfg.xpMin, cfg.xpMax) : 0;
+  const voidGained = won ? rand(cfg.voidMin, cfg.voidMax) : 0;
+  if (won) { logLine('system', '════ VICTORY! ════'); logLine('xp', ' +' + xpGained + ' XP EARNED'); logLine('loot', ' +' + voidGained + ' $VOID'); }
+  else { logLine('system', '════ DEFEATED... ════'); logLine('system', ' NO REWARDS — RETURN STRONGER'); }
+  const itemCount = won ? rand(cfg.items[0], cfg.items[1]) : 0;
+  const loot = [];
+  for (let i = 0; i < itemCount; i++) { const rarity = rollRarity(selectedDifficulty); const pool = LOOT_POOL[rarity]; const item = { ...pick(pool), rarity }; loot.push(item); logLine('loot', ' LOOT: [' + rarity.toUpperCase() + '] ' + item.name); }
+  return { won, xp: xpGained, void: voidGained, loot };
+}
+
+function applyXP(amount) {
+  character.xp = (character.xp || 0) + amount;
+  let leveled = false;
+  while (true) {
+    const needed = 1000 * (character.level || 1);
+    if (character.xp >= needed) {
+      character.xp -= needed;
+      character.level = (character.level || 1) + 1;
+      if (!character.stats) character.stats = { ...CLASS_BASE_STATS[character.class] };
+      character.stats.str += 2;
+      character.stats.dex += 2;
+      character.stats.int += 2;
+      character.stats.vit = Math.floor((character.stats.vit||0) + 1.5);
+      leveled = true;
+    } else break;
+  }
+  saveCharacter();
+  return leveled;
+}
+
+function triggerLevelUp(newLevel) { const banner = document.getElementById('levelup-banner'); banner.textContent = '⚡ LEVEL UP! YOU ARE NOW LEVEL ' + newLevel + ' ⚡'; banner.style.display = 'block'; setTimeout(() => { banner.style.display = 'none'; }, 3500); logLine('system', '⚡ LEVEL UP! NOW LEVEL ' + newLevel); }
+
+function saveRaidHistory(entry) { const key = 'clawkingdom_raid_history'; const history = JSON.parse(localStorage.getItem(key) || '[]'); history.unshift(entry); if (history.length > 20) history.pop(); localStorage.setItem(key, JSON.stringify(history)); }
+
+function renderRaidHistory() {
+  const key = 'clawkingdom_raid_history';
+  const history = JSON.parse(localStorage.getItem(key) || '[]');
+  const el = document.getElementById('raid-history-list');
+  if (!history.length) { el.innerHTML = '<div class="empty-raids">NO RAIDS YET<br><br>ENTER A DUNGEON<br>TO BEGIN</div>'; return; }
+  el.innerHTML = history.map(r => { const date = new Date(r.timestamp); const timeStr = date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0'); const lootBadges = (r.loot || []).map(item => '<span class="loot-badge" style="color:'+RARITY_COLORS[item.rarity]+'">'+item.icon+'</span>' ).join(''); return `<div class="raid-entry"> <div class="raid-entry-header"> <span class="raid-entry-diff diff-${r.difficulty}">${r.difficulty.toUpperCase()}</span> <span class="raid-entry-result" style="color:${r.won?'#34d399':'#f87171'}">${r.won?'✓ WIN':'✗ LOSS'}</span> </div> <div style="font-size:6px;color:rgba(255,255,255,0.5);margin-bottom:6px">${r.bossName} • ${timeStr}</div> <div style="font-size:7px;color:#a78bfa">+${r.xp} XP +${r.void} $VOID</div> <div class="raid-entry-loot">${lootBadges}</div> </div>`; }).join('');
+}
+
+function showLootModal(results) {
+  document.getElementById('modal-title').textContent = results.won ? '⚡ VICTORY! ⚡' : '💀 DEFEATED';
+  document.getElementById('modal-xp').textContent = '+' + results.xp;
+  document.getElementById('modal-void').textContent = '+' + results.void;
+  document.getElementById('modal-level').textContent = 'LVL ' + (character.level || 1);
+  const grid = document.getElementById('loot-grid');
+  if (!results.loot || results.loot.length === 0) { grid.innerHTML = '<div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center;padding:20px;grid-column:1/-1">NO LOOT DROPPED</div>'; }
+  else { grid.innerHTML = results.loot.map(item => ` <div class="loot-item" style="--item-rarity:${RARITY_COLORS[item.rarity]}"> <span class="loot-item-new">NEW</span> <span class="loot-item-icon">${item.icon}</span> <div class="loot-item-name">${item.name}</div> <div class="loot-item-rarity">${item.rarity.toUpperCase()}</div> </div> `).join(''); }
+  addLootToInventory(results.loot);
+  document.getElementById('loot-modal').classList.add('active');
+}
+
+function closeModal() { document.getElementById('loot-modal').classList.remove('active'); selectedDifficulty = null; document.getElementById('raid-btn').textContent = '▶ SELECT A DUNGEON'; document.getElementById('raid-btn').disabled = true; ['easy','normal','hard'].forEach(d => document.getElementById('btn-'+d).classList.remove('selected')); switchToIdleView(); }
+
+function addLootToInventory(loot) { if (!loot || !loot.length) return; const inv = JSON.parse(localStorage.getItem('clawkingdom_inventory') || '[]'); loot.forEach(item => { inv.push({ name: item.name, icon: item.icon, type: item.type, rarity: item.rarity, acquiredAt: Date.now() }); }); localStorage.setItem('clawkingdom_inventory', JSON.stringify(inv)); }
+
+function switchToBattleView(bossSprite, bossName) { document.getElementById('scene-idle').style.display = 'none'; const battle = document.getElementById('scene-battle'); battle.style.display = 'flex'; document.getElementById('hero-sprite').textContent = CLASS_SPRITES[character.class] || '⚔️'; document.getElementById('boss-sprite').textContent = bossSprite; document.getElementById('boss-name-label').textContent = bossName.toUpperCase().slice(0,12); document.getElementById('hero-hp').style.width = '100%'; document.getElementById('boss-hp').style.width = '100%'; }
+
+function switchToIdleView() { document.getElementById('scene-idle').style.display = 'flex'; document.getElementById('scene-idle').innerHTML = '<h2>⚔ SELECT A DUNGEON</h2><p>Choose difficulty below to enter</p>'; document.getElementById('scene-battle').style.display = 'none'; hideProgressBar(); }
+
+function showProgressBar() { const el = document.getElementById('progress-wrap'); el.style.display = 'block'; document.getElementById('progress-fill').style.width = '0%'; }
+
+function hideProgressBar() { document.getElementById('progress-wrap').style.display = 'none'; }
+
+function updateProgress(pct) { document.getElementById('progress-fill').style.width = pct + '%'; document.getElementById('progress-label').textContent = pct < 100 ? 'RAID IN PROGRESS... ' + pct + '%' : 'RAID COMPLETE!'; }
+
+function disableControls(disabled) { ['btn-easy','btn-normal','btn-hard','raid-btn'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = disabled; }); }
+
+function logLine(type, text) { const log = document.getElementById('combat-log'); const line = document.createElement('div'); line.className = 'log-line ' + type; line.textContent = text; log.appendChild(line); log.scrollTop = log.scrollHeight; }
+
+function clearLog() { document.getElementById('combat-log').innerHTML = ''; }
+
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function rollRarity(diff) { const weights = RARITY_WEIGHTS[diff]; const roll = Math.random() * 100; let cumulative = 0; for (const [rarity, weight] of Object.entries(weights)) { cumulative += weight; if (roll < cumulative) return rarity; } return 'common'; }
+</script>
+
+</body>
+</html>
