@@ -47,11 +47,12 @@ h1 { text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 32px
 .inventory-slot { aspect-ratio: 1; background: #1f2937; border: 2px solid; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: grab; transition: all 0.2s; }
 .inventory-slot:not(.empty):hover { transform: scale(1.1); }
 .inventory-slot.empty { opacity: 0.4; cursor: default; }
-.rarity-common { border-color: #9ca3af; }
-.rarity-uncommon { border-color: #10b981; }
-.rarity-rare { border-color: #3b82f6; }
-.rarity-epic { border-color: #a855f7; }
-.rarity-legendary { border-color: #fbbf24; }
+.rarity-common { border-color: #9ca3af !important; border-width: 3px !important; }
+.rarity-uncommon { border-color: #10b981 !important; border-width: 3px !important; }
+.rarity-rare { border-color: #3b82f6 !important; border-width: 3px !important; }
+.rarity-epic { border-color: #a855f7 !important; border-width: 3px !important; }
+.rarity-legendary { border-color: #fbbf24 !important; border-width: 3px !important; }
+.rarity-void { border-color: #c084fc !important; border-width: 3px !important; }
 .delete-btn { background: #ef4444; color: white; padding: 16px 40px; border: 4px solid #dc2626; font-family: 'Press Start 2P', cursive; font-size: 12px; cursor: pointer; transition: all 0.3s; letter-spacing: 2px; }
 .delete-btn:hover { background: #dc2626; transform: translateY(-2px); }
 @media (max-width: 1400px) { .main-grid { grid-template-columns: 1fr; } }
@@ -140,7 +141,12 @@ const SLOT_LABELS = {
 };
 
 const RARITY_COLORS = {
-  common: '#9ca3af', uncommon: '#10b981', rare: '#3b82f6', epic: '#a855f7', legendary: '#fbbf24'
+  common: '#9ca3af', 
+  uncommon: '#10b981', 
+  rare: '#3b82f6', 
+  epic: '#a855f7', 
+  legendary: '#fbbf24',
+  void: '#c084fc'
 };
 
 let character = JSON.parse(localStorage.getItem('clawkingdom_character') || 'null');
@@ -175,8 +181,21 @@ function render() {
     const item = itemId ? ITEM_DATABASE[itemId] : null;
     if (item) { div.style.borderColor = RARITY_COLORS[item.rarity]; }
     
+    const itemRarity = item?.rarity || 'common';
+    const rarityColor = RARITY_COLORS[itemRarity] || '#9ca3af';
+    
+    let statsDisplay = '';
+    if (item) {
+      const statNames = ['str','dex','int','vit','atk','def','crit','critdmg'];
+      const itemStats = statNames.filter(s => item[s] !== undefined && item[s] !== null);
+      if (itemStats.length > 0) {
+        const topStats = itemStats.slice(0, 2).map(s => `<span style="color:#34d399">${s.toUpperCase()}${item[s]>0?'+':''}${item[s]}</span>`).join(' / ');
+        statsDisplay = '<div class="slot-stats">' + topStats + '</div>';
+      }
+    }
+    
     div.innerHTML = '<div class="slot-label">' + SLOT_LABELS[slot] + '</div>' +
-      (item ? '<div class="slot-icon">' + item.icon + '</div><div class="slot-name" style="color: ' + RARITY_COLORS[item.rarity] + '">' + item.name + '</div>' : '<div class="empty-slot">Empty</div>');
+      (item ? '<div class="slot-icon">' + item.icon + '</div><div class="slot-name" style="color: ' + rarityColor + '">' + item.name + '</div>' + statsDisplay : '<div class="empty-slot">Empty</div>');
     
     // Tooltip on hover
     if (item) {
@@ -221,10 +240,19 @@ function render() {
   const items = inventory || [];
   items.forEach((item, index) => {
     const div = document.createElement('div');
-    div.className = 'inventory-slot rarity-' + (item.rarity || 'common');
+    const rarityClass = 'rarity-' + (item.rarity || 'common');
+    div.className = 'inventory-slot ' + rarityClass;
     div.draggable = true;
     div.style.position = 'relative';
-    div.textContent = item.icon || '📦';
+    div.style.borderColor = RARITY_COLORS[item.rarity || 'common'];
+    
+    // Force icon display
+    div.textContent = '';
+    const iconEl = document.createElement('span');
+    iconEl.textContent = item.icon || '📦';
+    iconEl.style.fontSize = '28px';
+    iconEl.style.lineHeight = '1';
+    div.appendChild(iconEl);
     
     div.addEventListener('dragstart', () => { draggedItemIndex = index; div.style.opacity = '0.5'; });
     div.addEventListener('dragend', () => { div.style.opacity = '1'; });
@@ -279,24 +307,34 @@ function updateStats() {
 let currentTooltip = null;
 
 function showItemTooltip(event, item) {
+  if (!item) return;
   const rarity = item.rarity || 'common';
-  const stats = ['str','dex','int','vit','atk','def','crit','critdmg'].filter(s => item[s]);
+  const statNames = ['str','dex','int','vit','atk','def','crit','critdmg'];
+  const stats = statNames.filter(s => item[s] !== undefined && item[s] !== null);
   
   let tooltip = document.getElementById('item-tooltip');
   if (!tooltip) {
     tooltip = document.createElement('div');
     tooltip.id = 'item-tooltip';
-    tooltip.className = 'item-tooltip active';
+    tooltip.className = 'item-tooltip';
     document.body.appendChild(tooltip);
   }
   
-  let statRows = stats.map(s => `<div class="tooltip-stat"><span>${s.toUpperCase()}</span><span class="tooltip-stat-val">${item[s]>0?'+':''}${item[s]}</span></div>`).join('');
+  let statRows = stats.length > 0 
+    ? stats.map(s => {
+        const val = item[s];
+        const sign = val > 0 ? '+' : '';
+        return `<div class="tooltip-stat"><span>${s.toUpperCase()}</span><span class="tooltip-stat-val">${sign}${val}</span></div>`;
+      }).join('')
+    : '<div style="color:#9ca3af;font-size:10px">No stat bonuses</div>';
+  
+  const tooltipColor = RARITY_COLORS[rarity] || '#9ca3af';
   
   tooltip.innerHTML = `
-    <div class="tooltip-name">${item.name}</div>
-    <div class="tooltip-rarity">◆ ${rarity.toUpperCase()}</div>
+    <div class="tooltip-name" style="color:${tooltipColor}">${item.name}</div>
+    <div class="tooltip-rarity" style="color:${tooltipColor}">◆ ${rarity.toUpperCase()}</div>
     <div class="tooltip-type">${(item.type || 'item').toUpperCase()}</div>
-    ${statRows ? '<div>' + statRows + '</div>' : '<div style="color:#9ca3af;font-size:10px">No stat bonuses</div>'}
+    <div>${statRows}</div>
   `;
   tooltip.classList.add('active');
   
@@ -305,6 +343,7 @@ function showItemTooltip(event, item) {
   tooltip.style.left = (rect.right + 8) + 'px';
   tooltip.style.top = (rect.top - 12) + 'px';
   tooltip.style.maxWidth = '180px';
+  tooltip.style.borderColor = tooltipColor;
   currentTooltip = tooltip;
 }
 
