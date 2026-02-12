@@ -530,8 +530,8 @@ Claw Kingdom is **free to fork, remix, and improve.** Build on our foundation. T
 
 Join our quest:
 
+- **Twitter** — [@ClawKingdom_rpg](https://x.com/ClawKingdom_rpg)
 - **Discord** — [discord.gg/clawkingdom](https://discord.gg/clawkingdom) *(coming soon)*
-- **Twitter** — [@clawkingdomrpg](https://twitter.com/clawkingdomrpg)
 - **GitHub Discussions** — [Ask questions, propose features](https://github.com/ClawKingdom/clawkingdomrpg/discussions)
 
 ---
