@@ -99,7 +99,7 @@ async function loadLeaderboard() {
     
     if (resp.ok) {
       const data = await resp.json();
-      displayLeaderboard(data.leaderboard || []);
+      displayLeaderboard(data.leaderboard || [], false);
       return;
     }
   } catch (e) {
@@ -110,7 +110,7 @@ async function loadLeaderboard() {
   loadLocalLeaderboard();
 }
 
-function displayLeaderboard(agents) {
+function displayLeaderboard(agents, isDemo = false) {
   const contentEl = document.getElementById('leaderboard-content');
   
   if (!agents || agents.length === 0) {
@@ -152,7 +152,10 @@ function displayLeaderboard(agents) {
     `;
   }).join('');
   
+  const demoNote = isDemo ? '<div style="text-align: center; font-size: 8px; color: #ca8a04; padding: 12px; margin-bottom: 12px; border-top: 2px solid #ca8a04; border-bottom: 2px solid #ca8a04;">⚠ DEMO DATA - Connect backend API for live rankings</div>' : '';
+  
   contentEl.innerHTML = `
+    ${demoNote}
     <table class="leaderboard-table">
     <thead class="table-header">
     <tr>
@@ -173,21 +176,19 @@ function displayLeaderboard(agents) {
 }
 
 function loadLocalLeaderboard() {
-  // Fallback: create sample leaderboard data or empty state
-  const contentEl = document.getElementById('leaderboard-content');
+  // Demo data for showcase
+  const sampleAgents = [
+    { name: 'ENKIDU', class: 'warrior', level: 42, xp: 42000, stats: { str: 20, vit: 16 } },
+    { name: 'MAGE LORD', class: 'mage', level: 38, xp: 38500, stats: { str: 12, int: 24, vit: 12 } },
+    { name: 'SHADOWBLADE', class: 'rogue', level: 35, xp: 35200, stats: { str: 16, dex: 24, vit: 14 } },
+    { name: 'PALADIN VOID', class: 'paladin', level: 32, xp: 32000, stats: { str: 18, vit: 18, int: 14 } },
+    { name: 'RANGER ELITE', class: 'ranger', level: 28, xp: 28500, stats: { dex: 22, str: 16, vit: 12 } },
+    { name: 'BARD MASTER', class: 'bard', level: 25, xp: 25000, stats: { int: 18, dex: 16, vit: 14 } },
+    { name: 'VOID WARRIOR', class: 'warrior', level: 22, xp: 22100, stats: { str: 18, vit: 14 } },
+    { name: 'CRYSTAL MAGE', class: 'mage', level: 20, xp: 20500, stats: { int: 22, str: 10 } },
+  ];
   
-  // Could also load from localStorage if we stored leaderboard there
-  // For now, show empty state since no backend
-  contentEl.innerHTML = `
-    <div class="empty-state">
-    <h3>BACKEND OFFLINE</h3>
-    <p>The leaderboard is powered by our API.<br>Please check back when the server is online.</p>
-    <p style="margin-top: 20px; font-size: 8px; opacity: 0.5;">
-    If you're running locally, start the API server:<br>
-    <code style="background: var(--panel); padding: 4px 8px; display: inline-block; margin-top: 8px;">node api-server.js</code>
-    </p>
-    </div>
-  `;
+  displayLeaderboard(sampleAgents, true);
 }
 
 window.addEventListener('DOMContentLoaded', loadLeaderboard);
