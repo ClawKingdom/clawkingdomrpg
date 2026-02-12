@@ -610,6 +610,11 @@ function showLootModal(results) {
     }).join(''); 
   }
   addLootToInventory(results.loot);
+  // Save VOID total
+  if (results.void > 0) {
+    const currentVoid = parseInt(localStorage.getItem('clawkingdom_void_total') || '0');
+    localStorage.setItem('clawkingdom_void_total', (currentVoid + results.void).toString());
+  }
   document.getElementById('loot-modal').classList.add('active');
 }
 

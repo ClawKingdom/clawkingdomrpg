@@ -30,6 +30,7 @@ h1 { text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 32px
 .xp-bar { width: 100%; height: 24px; background: #1a1a2e; border: 2px solid black; position: relative; }
 .xp-fill { height: 100%; background: #9333ea; transition: width 0.3s; }
 .xp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; font-size: 12px; }
+.void-counter { font-size: 16px; color: #a855f7; font-weight: bold; }
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .stat-box { background: #e5e7eb; border: 2px solid #374151; padding: 8px 6px; overflow: hidden; min-height: 52px; }
 .stat-label { font-size: 7px; font-weight: bold; color: #4b5563; letter-spacing: 0.5px; margin-bottom: 4px; white-space: nowrap; }
@@ -90,6 +91,9 @@ h1 { text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 32px
 <div class="xp-container">
 <div class="xp-label"><span>XP</span><span id="xpValue">0 / 1000</span></div>
 <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width: 0%"></div><div class="xp-text" id="xpText">0%</div></div>
+</div>
+<div class="xp-container" style="margin-top: 16px; border-top: 2px solid #374151; padding-top: 16px;">
+<div class="xp-label"><span>💜 VOID</span><span id="voidValue">0</span></div>
 </div>
 <div class="stats-grid">
 <div class="stat-box"><div class="stat-label">STR</div><div class="stat-value" id="statStr">10</div></div>
@@ -164,6 +168,7 @@ const RARITY_COLORS = {
 
 let character = JSON.parse(localStorage.getItem('clawkingdom_character') || 'null');
 let inventory = JSON.parse(localStorage.getItem('clawkingdom_inventory') || '[]');
+let voidTotal = parseInt(localStorage.getItem('clawkingdom_void_total') || '0');
 let equipment = character?.equipment || { weapon: 'iron_sword', helmet: 'steel_helmet', chest: 'leather_armor', offhand: 'wooden_shield', gloves: null, boots: null, ring: null, ring2: null, amulet: null };
 let draggedItemIndex = null;
 
@@ -182,6 +187,9 @@ function render() {
   document.getElementById('xpValue').textContent = (character.xp || 0) + ' / ' + xpNeeded;
   document.getElementById('xpFill').style.width = xpPct + '%';
   document.getElementById('xpText').textContent = xpPct + '%';
+  
+  // Display VOID total
+  document.getElementById('voidValue').textContent = voidTotal.toLocaleString();
   
   // Render equipment grid (clickable to unequip)
   const eqGrid = document.getElementById('equipmentGrid');
@@ -338,6 +346,15 @@ function render() {
 function saveData() {
   localStorage.setItem('clawkingdom_character', JSON.stringify(character));
   localStorage.setItem('clawkingdom_inventory', JSON.stringify(inventory));
+  localStorage.setItem('clawkingdom_void_total', voidTotal.toString());
+}
+
+function addVoid(amount) {
+  voidTotal += amount;
+  localStorage.setItem('clawkingdom_void_total', voidTotal.toString());
+  if (document.getElementById('voidValue')) {
+    document.getElementById('voidValue').textContent = voidTotal.toLocaleString();
+  }
 }
 
 function updateStats() {
