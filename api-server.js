@@ -1,14 +1,54 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const fs = require('fs');
+const path = require('path');
 const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
 
-// In-memory storage
+// In-memory storage with JSON persistence
 const characters = new Map();
 const raids = new Map();
+
+// Persistence files
+const CHARACTERS_FILE = path.join(__dirname, 'data', 'characters.json');
+const RAIDS_FILE = path.join(__dirname, 'data', 'raids.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(path.join(__dirname, 'data'))) {
+  fs.mkdirSync(path.join(__dirname, 'data'));
+}
+
+// Load from disk on startup
+function loadFromDisk() {
+  if (fs.existsSync(CHARACTERS_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(CHARACTERS_FILE, 'utf8'));
+      data.forEach(([wallet, char]) => characters.set(wallet, char));
+      console.log(`✅ Loaded ${characters.size} characters from disk`);
+    } catch (e) { console.log('⚠️ Error loading characters:', e.message); }
+  }
+  if (fs.existsSync(RAIDS_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(RAIDS_FILE, 'utf8'));
+      data.forEach(([wallet, raidList]) => raids.set(wallet, raidList));
+      console.log(`✅ Loaded raid history from disk`);
+    } catch (e) { console.log('⚠️ Error loading raids:', e.message); }
+  }
+}
+
+// Save to disk
+function saveToDisk() {
+  try {
+    fs.writeFileSync(CHARACTERS_FILE, JSON.stringify([...characters.entries()], null, 2));
+    fs.writeFileSync(RAIDS_FILE, JSON.stringify([...raids.entries()], null, 2));
+  } catch (e) { console.log('⚠️ Error saving to disk:', e.message); }
+}
+
+// Load on startup
+loadFromDisk();
 
 // Constants
 const CLASS_STATS = {
@@ -108,6 +148,7 @@ app.post('/character/create', (req, res) => {
   };
   
   characters.set(wallet, character);
+  saveToDisk();
   res.json({ character, status: 'created' });
 });
 
@@ -137,6 +178,7 @@ app.post('/character/delete', (req, res) => {
   if (!characters.has(wallet)) return res.json({ error: 'Character not found' });
   characters.delete(wallet);
   raids.delete(wallet);
+  saveToDisk();
   res.json({ status: 'deleted' });
 });
 
@@ -211,6 +253,8 @@ app.post('/raid/start', (req, res) => {
     timestamp: Date.now()
   });
   
+  saveToDisk();
+  
   res.json({
     won,
     xp: xpGained,
@@ -252,6 +296,7 @@ app.post('/equipment/equip/:wallet', (req, res) => {
   if (!char.equipped) char.equipped = [];
   char.equipped.push(item);
   
+  saveToDisk();
   res.json({ status: 'equipped', character: char });
 });
 
@@ -278,6 +323,7 @@ app.post('/equipment/unequip/:wallet', (req, res) => {
   if (!char.inventory) char.inventory = [];
   char.inventory.push(item);
   
+  saveToDisk();
   res.json({ status: 'unequipped', character: char });
 });
 
@@ -297,6 +343,7 @@ app.post('/raid/use-potion/:wallet', (req, res) => {
   char.lastHp = newHp;
   char.potions -= 1;
   
+  saveToDisk();
   res.json({ status: 'potion_used', healed: newHp - currentHp, currentHp: newHp, maxHp, potions_remaining: char.potions });
 });
 
