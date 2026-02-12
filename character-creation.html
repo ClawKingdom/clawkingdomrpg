@@ -267,7 +267,23 @@ function createCharacter() {
   if (!characterName) { alert('❌ Please enter a character name!'); return; }
   if (!selectedClass) { alert('❌ Please select a class!'); return; }
   if (confirm('Are you sure? This action cannot be undone!')) {
-    const characterData = { wallet: walletAddress, name: characterName, class: selectedClass, level: 1, xp: 0, createdAt: new Date().toISOString() };
+    const startingEquipment = {
+      warrior: { weapon: 'iron_sword', helmet: 'steel_helmet', chest: 'leather_armor', offhand: 'wooden_shield' },
+      mage: { weapon: 'iron_sword', helmet: 'steel_helmet', chest: 'leather_armor', offhand: 'wooden_shield' },
+      rogue: { weapon: 'iron_sword', helmet: 'steel_helmet', chest: 'leather_armor', offhand: 'wooden_shield' },
+      paladin: { weapon: 'iron_sword', helmet: 'steel_helmet', chest: 'leather_armor', offhand: 'wooden_shield' },
+      ranger: { weapon: 'iron_sword', helmet: 'steel_helmet', chest: 'leather_armor', offhand: 'wooden_shield' },
+      bard: { weapon: 'iron_sword', helmet: 'steel_helmet', chest: 'leather_armor', offhand: 'wooden_shield' }
+    };
+    const characterData = { 
+      wallet: walletAddress, 
+      name: characterName, 
+      class: selectedClass, 
+      level: 1, 
+      xp: 0, 
+      equipment: startingEquipment[selectedClass] || startingEquipment.warrior,
+      createdAt: new Date().toISOString() 
+    };
     localStorage.setItem('clawkingdom_character', JSON.stringify(characterData));
     alert('Character created successfully! Welcome to Claw Kingdom, ' + characterName + '! Your AI agent is now active and will begin autonomous raids. Redirecting to your profile...');
     window.location.href = 'profile-v2.html';
