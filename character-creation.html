@@ -263,6 +263,42 @@ function nextStep() {
 
 function previousStep() { if (currentStep === 1) { window.location.href = 'index.html'; return; } document.getElementById('content' + currentStep).classList.remove('active'); document.getElementById('step' + currentStep).classList.remove('active'); currentStep--; document.getElementById('content' + currentStep).classList.add('active'); document.getElementById('step' + currentStep).classList.add('active'); document.getElementById('step' + currentStep).classList.remove('completed'); }
 
+function registerAgentToLeaderboard(characterData) {
+  try {
+    // Get existing agents list
+    const agents = JSON.parse(localStorage.getItem('clawkingdom_all_agents') || '[]');
+    
+    // Add base stats based on class
+    const baseStats = {
+      warrior: { str: 14, dex: 8, int: 4, vit: 12 },
+      mage: { str: 4, dex: 10, int: 16, vit: 6 },
+      rogue: { str: 10, dex: 14, int: 6, vit: 8 },
+      paladin: { str: 10, dex: 8, int: 10, vit: 10 },
+      ranger: { str: 10, dex: 14, int: 6, vit: 8 },
+      bard: { str: 6, dex: 12, int: 10, vit: 10 }
+    };
+    
+    const newAgent = {
+      wallet: characterData.wallet || 'anon_' + Math.random().toString(36).slice(2, 7),
+      name: characterData.name,
+      class: characterData.class,
+      level: 1,
+      xp: 0,
+      stats: baseStats[characterData.class] || baseStats.warrior,
+      createdAt: characterData.createdAt
+    };
+    
+    // Check if agent already exists (avoid duplicates)
+    const exists = agents.some(a => a.wallet === newAgent.wallet && a.name === newAgent.name);
+    if (!exists) {
+      agents.push(newAgent);
+      localStorage.setItem('clawkingdom_all_agents', JSON.stringify(agents));
+    }
+  } catch (e) {
+    console.error('Failed to register agent to leaderboard:', e);
+  }
+}
+
 function createCharacter() {
   if (!characterName) { alert('❌ Please enter a character name!'); return; }
   if (!selectedClass) { alert('❌ Please select a class!'); return; }
@@ -285,6 +321,10 @@ function createCharacter() {
       createdAt: new Date().toISOString() 
     };
     localStorage.setItem('clawkingdom_character', JSON.stringify(characterData));
+    
+    // Register agent in global leaderboard
+    registerAgentToLeaderboard(characterData);
+    
     alert('Character created successfully! Welcome to Claw Kingdom, ' + characterName + '! Your AI agent is now active and will begin autonomous raids. Redirecting to your profile...');
     window.location.href = 'profile-v2.html';
   }

@@ -103,11 +103,26 @@ async function loadLeaderboard() {
       return;
     }
   } catch (e) {
-    console.log('Backend offline, using localStorage data');
+    console.log('Backend offline, checking localStorage');
   }
   
-  // Fallback: load from localStorage if backend unavailable
-  loadLocalLeaderboard();
+  // Try to load real data from localStorage
+  const savedAgents = loadSavedAgents();
+  if (savedAgents && savedAgents.length > 0) {
+    displayLeaderboard(savedAgents, false);
+  } else {
+    // Only show demo if no real data exists
+    loadLocalLeaderboard();
+  }
+}
+
+function loadSavedAgents() {
+  try {
+    const agents = JSON.parse(localStorage.getItem('clawkingdom_all_agents') || '[]');
+    return agents;
+  } catch (e) {
+    return [];
+  }
 }
 
 function displayLeaderboard(agents, isDemo = false) {
@@ -152,7 +167,7 @@ function displayLeaderboard(agents, isDemo = false) {
     `;
   }).join('');
   
-  const demoNote = isDemo ? '<div style="text-align: center; font-size: 8px; color: #ca8a04; padding: 12px; margin-bottom: 12px; border-top: 2px solid #ca8a04; border-bottom: 2px solid #ca8a04;">⚠ DEMO DATA - Connect backend API for live rankings</div>' : '';
+  const demoNote = isDemo ? '<div style="text-align: center; font-size: 8px; color: #ca8a04; padding: 12px; margin-bottom: 12px; border-top: 2px solid #ca8a04; border-bottom: 2px solid #ca8a04;">⚠ DEMO DATA — Create characters to see real rankings</div>' : '';
   
   contentEl.innerHTML = `
     ${demoNote}

@@ -396,7 +396,26 @@ function buildSceneGrid() {
 
 function loadCharacter() { try { const raw = localStorage.getItem('clawkingdom_character'); if (!raw) return null; const c = JSON.parse(raw); if (!c.stats) { const base = CLASS_BASE_STATS[c.class] || CLASS_BASE_STATS.warrior; const lvl = (c.level || 1) - 1; c.stats = { str: base.str + lvl * 2, dex: base.dex + lvl * 2, int: base.int + lvl * 2, vit: base.vit + Math.floor(lvl * 1.5) }; } return c; } catch(e) { return null; } }
 
-function saveCharacter() { localStorage.setItem('clawkingdom_character', JSON.stringify(character)); }
+function saveCharacter() { 
+  localStorage.setItem('clawkingdom_character', JSON.stringify(character));
+  // Also update in global leaderboard
+  updateAgentInLeaderboard(character);
+}
+
+function updateAgentInLeaderboard(character) {
+  try {
+    const agents = JSON.parse(localStorage.getItem('clawkingdom_all_agents') || '[]');
+    const idx = agents.findIndex(a => a.name === character.name);
+    if (idx >= 0) {
+      agents[idx].level = character.level;
+      agents[idx].xp = character.xp;
+      agents[idx].stats = character.stats;
+      localStorage.setItem('clawkingdom_all_agents', JSON.stringify(agents));
+    }
+  } catch (e) {
+    console.log('Failed to update agent in leaderboard');
+  }
+}
 
 function renderCharacter() {
   if (!character) return;
