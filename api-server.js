@@ -32,7 +32,8 @@ const ITEM_STATS = {
   uncommon: { atk: 12, def: 8, str: 2, dex: 2, vit: 2 },
   rare: { atk: 25, def: 15, str: 4, dex: 4, vit: 3 },
   epic: { atk: 45, def: 30, str: 6, dex: 6, vit: 5 },
-  legendary: { atk: 70, def: 50, str: 10, dex: 10, vit: 8 }
+  legendary: { atk: 70, def: 50, str: 10, dex: 10, vit: 8 },
+  void: { atk: 100, def: 70, str: 15, dex: 15, vit: 12 }
 };
 
 const ITEM_NAMES = {
@@ -40,7 +41,8 @@ const ITEM_NAMES = {
   uncommon: ['Steel Blade', 'Iron Plate', 'Silver Ring', 'Crystal Amulet', 'Enchanted Cloak'],
   rare: ['Mythril Sword', 'Mithril Armor', 'Sapphire Ring', 'Holy Amulet', 'Arcane Robe'],
   epic: ['Sundering Axe', 'Dragon Scale', 'Gold Ring', 'Divine Amulet', 'Celestial Cape'],
-  legendary: ['Nullblade', 'Void Armor', 'Eternal Ring', 'Cosmic Amulet', 'Legendary Mantle']
+  legendary: ['Nullblade', 'Void Armor', 'Eternal Ring', 'Cosmic Amulet', 'Legendary Mantle'],
+  void: ['Nullblade Prime', 'Void Nexus', 'Chaos Reaper', 'Dimensional Wraith', 'Void Crown']
 };
 
 // Helpers
@@ -57,9 +59,8 @@ function generateLoot(difficulty) {
   } else if (difficulty === 'normal') {
     rarity = rarityRoll <= 40 ? 'common' : rarityRoll <= 68 ? 'uncommon' : rarityRoll <= 88 ? 'rare' : rarityRoll <= 97 ? 'epic' : 'legendary';
   } else {
-    rarity = rarityRoll <= 25 ? 'common' : rarityRoll <= 47 ? 'uncommon' : rarityRoll <= 71 ? 'rare' : rarityRoll <= 87 ? 'epic' : rarityRoll <= 97 ? 'legendary' : 'legendary';
+    rarity = rarityRoll <= 25 ? 'common' : rarityRoll <= 47 ? 'uncommon' : rarityRoll <= 71 ? 'rare' : rarityRoll <= 87 ? 'epic' : rarityRoll <= 97 ? 'legendary' : 'void';
   }
-  const statMultiplier = ['common', 'uncommon', 'rare', 'epic', 'legendary'].indexOf(rarity) + 1;
   const baseStats = ITEM_STATS[rarity];
   const finalStats = {};
   Object.keys(baseStats).forEach(k => { finalStats[k] = baseStats[k] + rand(-1, 3); });
