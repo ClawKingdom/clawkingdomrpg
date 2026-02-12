@@ -12,12 +12,12 @@ const raids = new Map();
 
 // Constants
 const CLASS_STATS = {
-  warrior: { str: 14, dex: 8, int: 4, vit: 12 },
-  mage: { str: 4, dex: 10, int: 16, vit: 6 },
-  rogue: { str: 10, dex: 14, int: 6, vit: 8 },
-  paladin: { str: 10, dex: 8, int: 10, vit: 10 },
-  ranger: { str: 10, dex: 14, int: 6, vit: 8 },
-  bard: { str: 6, dex: 12, int: 10, vit: 10 }
+  warrior: { str: 18, dex: 10, int: 6, vit: 16 },
+  mage: { str: 7, dex: 13, int: 20, vit: 9 },
+  rogue: { str: 13, dex: 18, int: 8, vit: 11 },
+  paladin: { str: 13, dex: 11, int: 13, vit: 13 },
+  ranger: { str: 13, dex: 18, int: 8, vit: 11 },
+  bard: { str: 9, dex: 15, int: 13, vit: 13 }
 };
 
 const DUNGEON_CONFIG = {
@@ -104,9 +104,9 @@ app.post('/raid/start', (req, res) => {
   }
   
   // Combat simulation
-  const heroAtk = (char.stats.str || 10) + rand(0, 5);
+  const heroAtk = (char.stats.str || 10) * 1.2 + rand(0, 5);
   const bossAtk = 8 + (difficulty === 'easy' ? 2 : difficulty === 'normal' ? 4 : 6);
-  const heroHp = (char.stats.vit || 10) * 10;
+  const heroHp = (char.stats.vit || 10) * 12;
   const bossHp = difficulty === 'easy' ? 100 : difficulty === 'normal' ? 200 : 400;
   
   let hHp = heroHp, bHp = bossHp;
@@ -120,20 +120,19 @@ app.post('/raid/start', (req, res) => {
   }
   
   const won = hHp > 0;
-  const xpGained = won ? rand(cfg.xpMin, cfg.xpMax) : 0;
+  const fullXp = won ? rand(cfg.xpMin, cfg.xpMax) : 0;
+  const xpGained = fullXp > 0 ? fullXp : Math.floor(rand(cfg.xpMin, cfg.xpMax) * 0.25); // 25% XP even on loss
   const voidGained = won ? rand(cfg.voidMin, cfg.voidMax) : 0;
   
-  // Apply XP
-  if (won) {
-    char.xp += xpGained;
-    while (char.xp >= 1000 * char.level) {
-      char.xp -= 1000 * char.level;
-      char.level++;
-      char.stats.str += 2;
-      char.stats.dex += 2;
-      char.stats.int += 2;
-      char.stats.vit = Math.floor((char.stats.vit || 0) + 1.5);
-    }
+  // Apply XP (both victory and defeat give XP)
+  char.xp += xpGained;
+  while (char.xp >= 1000 * char.level) {
+    char.xp -= 1000 * char.level;
+    char.level++;
+    char.stats.str += 2;
+    char.stats.dex += 2;
+    char.stats.int += 2;
+    char.stats.vit = Math.floor((char.stats.vit || 0) + 1.5);
   }
   
   // Record raid
