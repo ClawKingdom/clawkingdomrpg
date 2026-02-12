@@ -139,6 +139,7 @@ const RARITY_COLORS = {
 let character = JSON.parse(localStorage.getItem('clawkingdom_character') || 'null');
 let inventory = JSON.parse(localStorage.getItem('clawkingdom_inventory') || '[]');
 let equipment = character?.equipment || { weapon: 'iron_sword', helmet: 'steel_helmet', chest: 'leather_armor', offhand: 'wooden_shield', gloves: null, boots: null, ring: null, ring2: null, amulet: null };
+let draggedItemIndex = null;
 
 function render() {
   if (!character) { alert('No character found!'); window.location.href = 'character-creation.html'; return; }
@@ -156,29 +157,63 @@ function render() {
   document.getElementById('xpFill').style.width = xpPct + '%';
   document.getElementById('xpText').textContent = xpPct + '%';
   
-  // Render equipment grid
+  // Render equipment grid (clickable to unequip)
   const eqGrid = document.getElementById('equipmentGrid');
   eqGrid.innerHTML = '';
   Object.keys(SLOT_LABELS).forEach(slot => {
     const div = document.createElement('div');
     div.className = 'equipment-slot';
+    div.dataset.slot = slot;
     const itemId = equipment[slot];
     const item = itemId ? ITEM_DATABASE[itemId] : null;
     if (item) { div.style.borderColor = RARITY_COLORS[item.rarity]; }
     
     div.innerHTML = '<div class="slot-label">' + SLOT_LABELS[slot] + '</div>' +
       (item ? '<div class="slot-icon">' + item.icon + '</div><div class="slot-name" style="color: ' + RARITY_COLORS[item.rarity] + '">' + item.name + '</div>' : '<div class="empty-slot">Empty</div>');
+    
+    // Unequip on click
+    div.addEventListener('click', () => {
+      if (equipment[slot]) {
+        inventory.push(equipment[slot]);
+        equipment[slot] = null;
+        saveData();
+        render();
+      }
+    });
+    
+    // Accept drops
+    div.addEventListener('dragover', (e) => { e.preventDefault(); div.style.opacity = '0.7'; });
+    div.addEventListener('dragleave', () => { div.style.opacity = '1'; });
+    div.addEventListener('drop', (e) => {
+      e.preventDefault();
+      div.style.opacity = '1';
+      if (draggedItemIndex !== null && draggedItemIndex < inventory.length) {
+        const item = inventory[draggedItemIndex];
+        if (ITEM_DATABASE[item] && ITEM_DATABASE[item].slot === slot) {
+          if (equipment[slot]) inventory.push(equipment[slot]);
+          equipment[slot] = inventory[draggedItemIndex];
+          inventory.splice(draggedItemIndex, 1);
+          draggedItemIndex = null;
+          saveData();
+          render();
+        }
+      }
+    });
     eqGrid.appendChild(div);
   });
   
-  // Render inventory grid
+  // Render inventory grid (draggable)
   const invGrid = document.getElementById('inventoryGrid');
   invGrid.innerHTML = '';
   const items = inventory || [];
-  items.forEach(item => {
+  items.forEach((item, index) => {
     const div = document.createElement('div');
     div.className = 'inventory-slot rarity-' + (item.rarity || 'common');
+    div.draggable = true;
     div.textContent = item.icon || '📦';
+    
+    div.addEventListener('dragstart', () => { draggedItemIndex = index; div.style.opacity = '0.5'; });
+    div.addEventListener('dragend', () => { div.style.opacity = '1'; });
     invGrid.appendChild(div);
   });
   
@@ -190,6 +225,11 @@ function render() {
   document.getElementById('inventoryCount').textContent = items.length + ' / 50';
   
   updateStats();
+}
+
+function saveData() {
+  localStorage.setItem('clawkingdom_character', JSON.stringify(character));
+  localStorage.setItem('clawkingdom_inventory', JSON.stringify(inventory));
 }
 
 function updateStats() {
