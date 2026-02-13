@@ -55,7 +55,7 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .tile-highlight { background: #1e1b36; }
 .scene-entities { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 10% 12%; z-index: 2; }
 .entity { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.entity-sprite { font-size: clamp(28px, 6vw, 56px); filter: drop-shadow(0 0 8px var(--purple)); animation: floatBob 2s ease-in-out infinite; }
+.entity-sprite { font-size: clamp(28px, 6vw, 56px); filter: drop-shadow(0 0 8px var(--purple)); animation: floatBob 2s ease-in-out infinite; display: flex; align-items: center; justify-content: center; background-size: cover; background-position: center; min-width: clamp(28px, 6vw, 56px); min-height: clamp(28px, 6vw, 56px); border-radius: 8px; }
 .entity-sprite.boss { filter: drop-shadow(0 0 12px #ef4444); animation: floatBob 2s ease-in-out infinite reverse; }
 @keyframes floatBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 .entity-hp-bar { width: 80px; height: 10px; background: #000; border: 2px solid rgba(255,255,255,0.3); }
@@ -381,6 +381,7 @@ window.addEventListener('DOMContentLoaded', () => {
   character = loadCharacter();
   if (!character) { document.getElementById('no-char-screen').style.display = 'block'; document.getElementById('main-content').style.display = 'none'; return; }
   renderCharacter();
+  displayHeroSprite();
   renderRaidHistory();
   updateStaminaUI();
   startStaminaTimer();
@@ -641,7 +642,9 @@ function closeModal() { document.getElementById('loot-modal').classList.remove('
 
 function addLootToInventory(loot) { if (!loot || !loot.length) return; const inv = JSON.parse(localStorage.getItem('clawkingdom_inventory') || '[]'); loot.forEach(item => { inv.push({ name: item.name, icon: item.icon, type: item.type, rarity: item.rarity, str: item.str || 0, dex: item.dex || 0, atk: item.atk || 0, def: item.def || 0, int: item.int || 0, vit: item.vit || 0, crit_chance: item.crit_chance || 0, crit_dmg: item.crit_dmg || 0, acquiredAt: Date.now() }); }); localStorage.setItem('clawkingdom_inventory', JSON.stringify(inv)); }
 
-function switchToBattleView(bossSprite, bossName) { document.getElementById('scene-idle').style.display = 'none'; const battle = document.getElementById('scene-battle'); battle.style.display = 'flex'; document.getElementById('hero-sprite').textContent = CLASS_SPRITES[character.class] || '⚔️'; document.getElementById('boss-sprite').textContent = bossSprite; document.getElementById('boss-name-label').textContent = bossName.toUpperCase().slice(0,12); document.getElementById('hero-hp').style.width = '100%'; document.getElementById('boss-hp').style.width = '100%'; }
+function displayHeroSprite() { const heroSprite = document.getElementById('hero-sprite'); const avatar = localStorage.getItem('clawkingdom_character_avatar'); if (avatar) { heroSprite.style.backgroundImage = `url('${avatar}')`; heroSprite.textContent = ''; } else { heroSprite.style.backgroundImage = 'none'; heroSprite.textContent = CLASS_SPRITES[character.class] || '⚔️'; } }
+
+function switchToBattleView(bossSprite, bossName) { document.getElementById('scene-idle').style.display = 'none'; const battle = document.getElementById('scene-battle'); battle.style.display = 'flex'; displayHeroSprite(); document.getElementById('boss-sprite').textContent = bossSprite; document.getElementById('boss-name-label').textContent = bossName.toUpperCase().slice(0,12); document.getElementById('hero-hp').style.width = '100%'; document.getElementById('boss-hp').style.width = '100%'; }
 
 function switchToIdleView() { document.getElementById('scene-idle').style.display = 'flex'; document.getElementById('scene-idle').innerHTML = '<h2>⚔ SELECT A DUNGEON</h2><p>Choose difficulty below to enter</p>'; document.getElementById('scene-battle').style.display = 'none'; hideProgressBar(); }
 
