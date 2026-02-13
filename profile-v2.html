@@ -83,6 +83,7 @@ h1 { text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 32px
 <div class="panel">
 <div class="panel-title">CHARACTER</div>
 <div class="avatar" id="avatar">🦞</div>
+<input type="file" id="avatar-upload" accept="image/*" style="width:100%;margin-bottom:12px;font-size:8px;padding:8px;border:2px solid #a855f7;background:#f3f4f6;cursor:pointer;">
 <div class="char-info">
 <div class="char-name" id="charName">HERO</div>
 <div class="char-class" id="charClass">WARRIOR</div>
@@ -481,8 +482,73 @@ window.deleteCharacter = function() {
   }
 };
 
+// Avatar upload handler
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_DIMENSIONS = 512;
+
+function handleAvatarUpload(file) {
+  if (!file) return;
+  if (file.size > MAX_FILE_SIZE) {
+    alert('❌ Image too large (max 2MB)');
+    return;
+  }
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    alert('❌ Only PNG/JPEG/WebP allowed');
+    return;
+  }
+  
+  const img = new Image();
+  img.onload = () => {
+    if (img.width > MAX_DIMENSIONS || img.height > MAX_DIMENSIONS) {
+      alert(`❌ Max ${MAX_DIMENSIONS}x${MAX_DIMENSIONS} pixels`);
+      return;
+    }
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    
+    const base64 = canvas.toDataURL('image/png');
+    localStorage.setItem('clawkingdom_character_avatar', base64);
+    updateAvatarDisplay(base64);
+    alert('✅ Avatar uploaded!');
+  };
+  
+  img.onerror = () => alert('❌ Invalid image file');
+  img.src = URL.createObjectURL(file);
+}
+
+function updateAvatarDisplay(base64) {
+  const avatar = document.getElementById('avatar');
+  avatar.style.backgroundImage = `url('${base64}')`;
+  avatar.style.backgroundSize = 'cover';
+  avatar.style.backgroundPosition = 'center';
+  avatar.textContent = '';
+}
+
+function restoreAvatarFromStorage() {
+  const saved = localStorage.getItem('clawkingdom_character_avatar');
+  if (saved) updateAvatarDisplay(saved);
+}
+
 // Initialize on load
-window.addEventListener('DOMContentLoaded', render);
+window.addEventListener('DOMContentLoaded', () => {
+  render();
+  restoreAvatarFromStorage();
+  
+  const uploadInput = document.getElementById('avatar-upload');
+  if (uploadInput) {
+    uploadInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleAvatarUpload(e.target.files[0]);
+        e.target.value = ''; // Reset input
+      }
+    });
+  }
+});
 </script>
 
 </body>
