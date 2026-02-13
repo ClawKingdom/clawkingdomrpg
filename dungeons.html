@@ -246,24 +246,17 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 </div>
 
 <div class="dungeon-btns" id="dungeon-btns">
-<button class="dungeon-btn easy" onclick="selectDungeon('easy')" id="btn-easy">
-<span class="dungeon-btn-icon">🌿</span>
-<span class="dungeon-btn-name">EASY</span>
-<span class="dungeon-btn-meta">LVL 1–15 • 3 FLOORS</span>
-<span class="dungeon-btn-reward" style="color:#22c55e">+200–400 XP • COMMON→RARE</span>
+<button class="raid-btn" onclick="launchRandomDungeon()" id="raid-btn-launch">
+⚔ LAUNCH DUNGEONS
 </button>
-<button class="dungeon-btn normal" onclick="selectDungeon('normal')" id="btn-normal">
-<span class="dungeon-btn-icon">🔥</span>
-<span class="dungeon-btn-name">NORMAL</span>
-<span class="dungeon-btn-meta">LVL 15–30 • 5 FLOORS</span>
-<span class="dungeon-btn-reward" style="color:#f59e0b">+500–900 XP • →LEGENDARY</span>
+</div>
+<div class="dungeon-btns" id="void-btn-container" style="display:none;margin-top:20px">
+<button class="raid-btn" style="background:#6b21a8;border-color:#c084fc" onclick="launchVoidRaid()" id="raid-btn-void">
+🔮 THE VOID (1/1 TICKET)
 </button>
-<button class="dungeon-btn hard" onclick="selectDungeon('hard')" id="btn-hard">
-<span class="dungeon-btn-icon">💀</span>
-<span class="dungeon-btn-name">HARD</span>
-<span class="dungeon-btn-meta">LVL 30–60 • 8 FLOORS</span>
-<span class="dungeon-btn-reward" style="color:#ef4444">+1000–2000 XP • →VOID</span>
-</button>
+<div style="font-size:8px;color:#666;margin-top:8px;text-align:center">Weekly reset: Friday 00:00 UTC</div>
+</div>
+<div style="font-size:8px;color:#a855f7;margin-top:16px;text-align:center" id="daily-bonus-display"></div>
 </div>
 
 <button class="raid-btn" id="raid-btn" onclick="startRaid()" disabled>
@@ -671,3 +664,225 @@ function rollRarity(diff) { const weights = RARITY_WEIGHTS[diff]; const roll = M
 
 </body>
 </html>
+// ===== DAILY CHALLENGE SYSTEM =====
+function isDailyChallengeDone() {
+  const lastChallenge = localStorage.getItem('clawkingdom_last_daily_challenge');
+  const today = new Date().toISOString().split('T')[0];
+  return lastChallenge === today;
+}
+
+function completeDailyChallenge() {
+  const today = new Date().toISOString().split('T')[0];
+  localStorage.setItem('clawkingdom_last_daily_challenge', today);
+  updateDailyBonusDisplay();
+}
+
+function updateDailyBonusDisplay() {
+  const display = document.getElementById('daily-bonus-display');
+  if (display) {
+    if (isDailyChallengeDone()) {
+      display.innerHTML = '✅ Daily Challenge Complete | Reset Tomorrow 00:00 UTC';
+      display.style.color = '#34d399';
+    } else {
+      display.innerHTML = '🔥 Daily Challenge Active | +50% XP on next raid!';
+      display.style.color = '#a855f7';
+    }
+  }
+}
+
+// ===== RANDOMIZED DIFFICULTY =====
+function getRandomDifficulty(level) {
+  const roll = Math.random() * 100;
+  let thresholds;
+  if (level <= 20) thresholds = { easy: 80, normal: 95, hard: 100 };
+  else if (level <= 50) thresholds = { easy: 40, normal: 90, hard: 100 };
+  else if (level <= 80) thresholds = { easy: 10, normal: 60, hard: 100 };
+  else thresholds = { easy: 5, normal: 25, hard: 100 };
+  if (roll < thresholds.easy) return 'easy';
+  if (roll < thresholds.normal) return 'normal';
+  return 'hard';
+}
+
+function launchRandomDungeon() {
+  if (!character) { alert('⚠️ No character!'); return; }
+  const wallet = localStorage.getItem('clawkingdom_wallet');
+  const raidsToday = getRaidsToday(wallet);
+  if (raidsToday >= 3) { alert('❌ Stamina exhausted!'); return; }
+  const difficulty = getRandomDifficulty(character.level);
+  selectDungeon(difficulty);
+}
+
+// ===== THE VOID SYSTEM =====
+let isVoidRaid = false;
+
+function getWeekNumber() {
+  const date = new Date();
+  const firstDay = new Date(date.getFullYear(), 0, 1);
+  const pastDays = (date - firstDay) / 86400000;
+  return Math.ceil((pastDays + firstDay.getDay() + 1) / 7) + '.' + date.getFullYear();
+}
+
+function hasVoidTicket() {
+  const lastTicket = localStorage.getItem('clawkingdom_void_ticket_week');
+  return lastTicket !== getWeekNumber();
+}
+
+function useVoidTicket() {
+  localStorage.setItem('clawkingdom_void_ticket_week', getWeekNumber());
+  updateVoidTicketDisplay();
+}
+
+function updateVoidTicketDisplay() {
+  const container = document.getElementById('void-btn-container');
+  const btn = document.getElementById('raid-btn-void');
+  if (!container || !btn) return;
+  container.style.display = 'block';
+  if (hasVoidTicket()) {
+    btn.textContent = '🔮 THE VOID (1/1 TICKET)';
+    btn.style.opacity = '1';
+    btn.disabled = false;
+  } else {
+    btn.textContent = '🔮 THE VOID (0/1 TICKET)';
+    btn.style.opacity = '0.5';
+    btn.disabled = true;
+  }
+}
+
+function launchVoidRaid() {
+  if (!character) { alert('⚠️ No character!'); return; }
+  if (!hasVoidTicket()) { alert('❌ No ticket! Resets Friday 00:00 UTC'); return; }
+  useVoidTicket();
+  isVoidRaid = true;
+  selectedDifficulty = 'void';
+  selectDungeon('void');
+}
+
+function generateVoidLoot(won) {
+  const loot = [];
+  if (won) {
+    const roll = Math.random() * 100;
+    let rarity = roll < 50 ? 'rare' : roll < 80 ? 'epic' : roll < 95 ? 'legendary' : 'void';
+    const pool = LOOT_POOL[rarity];
+    const item = { ...pick(pool), rarity };
+    loot.push(item);
+  } else {
+    const rarity = Math.random() < 0.4 ? 'uncommon' : 'common';
+    const pool = LOOT_POOL[rarity];
+    const item = { ...pick(pool), rarity };
+    loot.push(item);
+  }
+  return loot;
+}
+
+// Override selectDungeon to handle void & daily bonus
+const originalSelectDungeon = window.selectDungeon;
+window.selectDungeon = function(difficulty) {
+  selectedDifficulty = difficulty;
+  if (difficulty === 'void') {
+    const wallet = localStorage.getItem('clawkingdom_wallet');
+    startVoidRaid(wallet);
+  } else {
+    originalSelectDungeon.call(this, difficulty);
+  }
+};
+
+async function startVoidRaid(wallet) {
+  disableControls(true);
+  showProgressBar();
+  character = loadCharacter();
+  
+  const bossName = 'THE VOID KING';
+  const voidBoss = { name: bossName, hp: 150 + character.level * 3, emoji: '🔮' };
+  
+  switchToBattleView(voidBoss.emoji, bossName);
+  const combatLog = document.getElementById('combat-log');
+  combatLog.innerHTML = '<div class="log-line system">> THE VOID AWAKENS...</div>';
+  
+  let heroHp = character.hp;
+  let bossHp = voidBoss.hp;
+  const maxHeroHp = character.hp;
+  const maxBossHp = voidBoss.hp;
+  
+  let turnCount = 0;
+  const maxTurns = 10 + Math.floor(character.level / 10);
+  
+  while (heroHp > 0 && bossHp > 0 && turnCount < maxTurns) {
+    turnCount++;
+    updateProgress(Math.min(turnCount / maxTurns * 100, 95));
+    
+    const heroDamage = Math.floor(character.stats.atk * (0.8 + Math.random() * 0.4));
+    const isCrit = Math.random() * 100 < character.stats.crit_chance;
+    const critMultiplier = isCrit ? (1 + character.stats.crit_dmg / 100) : 1;
+    const finalDamage = Math.floor(heroDamage * critMultiplier);
+    
+    bossHp = Math.max(0, bossHp - finalDamage);
+    logLine('player', `You dealt ${finalDamage}${isCrit ? ' [CRIT]' : ''} damage!`);
+    document.getElementById('boss-hp').style.width = (bossHp / maxBossHp * 100) + '%';
+    
+    await new Promise(r => setTimeout(r, 400));
+    
+    if (bossHp <= 0) break;
+    
+    const bossDamage = Math.floor((50 + character.level * 2) * 1.5 * (0.7 + Math.random() * 0.6));
+    heroHp = Math.max(0, heroHp - bossDamage);
+    logLine('enemy', `THE VOID dealt ${bossDamage} damage!`);
+    document.getElementById('hero-hp').style.width = (heroHp / maxHeroHp * 100) + '%';
+    
+    await new Promise(r => setTimeout(r, 400));
+  }
+  
+  updateProgress(100);
+  const won = bossHp <= 0;
+  const void_earned = won ? Math.floor(150 + character.level * 2) : Math.floor(50 + character.level);
+  const loot = generateVoidLoot(won);
+  
+  await new Promise(r => setTimeout(r, 800));
+  
+  if (won) {
+    logLine('system', '✨ THE VOID BOWS TO YOUR POWER! ✨');
+    logLine('loot', `+${void_earned} $VOID (Victory Bonus!)`);
+    character.void_total = (character.void_total || 0) + void_earned;
+  } else {
+    logLine('system', 'The VOID retreats... you survived.');
+    logLine('loot', `+${void_earned} $VOID (Survival Reward)`);
+    character.void_total = (character.void_total || 0) + void_earned;
+  }
+  
+  loot.forEach(item => {
+    logLine('loot', `+ [${item.rarity.toUpperCase()}] ${item.name}`);
+  });
+  
+  if (!isDailyChallengeDone()) {
+    const xpBonus = Math.floor(won ? 500 : 200);
+    character.xp = (character.xp || 0) + xpBonus;
+    logLine('xp', `+${xpBonus} XP (Daily Challenge Bonus!)`);
+    completeDailyChallenge();
+  }
+  
+  addLootToInventory(loot);
+  saveCharacter();
+  addRaid({ won, boss: bossName, difficulty: 'void', xp: 0, void: void_earned, loot });
+  
+  renderCharacter();
+  updateStaminaUI();
+  disableControls(false);
+}
+
+// Initialize daily challenge & void display on page load
+document.addEventListener('DOMContentLoaded', () => {
+  updateDailyBonusDisplay();
+  updateVoidTicketDisplay();
+}, { once: true });
+
+// Patch raid completion to add daily XP bonus
+const originalAddRaid = window.addRaid;
+window.addRaid = function(raidData) {
+  if (!isDailyChallengeDone()) {
+    const xpBonus = Math.floor(raidData.won ? 200 : 100);
+    character.xp = (character.xp || 0) + xpBonus;
+    raidData.dailyBonus = xpBonus;
+    logLine('xp', `+${xpBonus} XP (Daily Challenge Bonus!)`);
+    completeDailyChallenge();
+  }
+  return originalAddRaid.call(this, raidData);
+};
