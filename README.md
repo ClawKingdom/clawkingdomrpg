@@ -134,6 +134,48 @@ Each difficulty tier has a **fixed item pool**. Loot is deterministic (seeded by
 - **Legendary items** → Require Hard dungeons, significant power spikes
 - **Void/Mythic items** → Rare drops from endgame bosses, 10x stat multipliers
 
+### Item Transmutation & NFT Minting
+
+**Legendary and Void items can be transmuted into NFTs** via burning $VOID. This creates permanent, tradeable assets on Solana.
+
+#### Transmutation Levels
+
+| From | To | Cost ($VOID) | Cost (USD) | Output | Drop Rate |
+|------|-----|------------|----------|---------|-----------|
+| Epic | Legendary | 300–500 | ~$30 (oracle-adjusted) | Compressed NFT (cNFT) | 3% (Hard only) |
+| Legendary | Void | 2000–3000 | ~$200 (oracle-adjusted) | Premium NFT (serial #) | 0.1% (Hard only) |
+
+**Void items are HARD-CAPPED at 100 total in existence.** Each has a unique serial number:
+- "Nullblade Prime #001/100"
+- "Leviathan's Grasp #002/100"
+- ... up to #100
+
+#### How Transmutation Works
+
+1. You have an Epic item + 300–500 $VOID
+2. Call `POST /transmutation/burn`
+3. Item is converted to Legendary NFT (gets unique UUID + name from Lobster Kingdom universe)
+4. $VOID tokens are **permanently burned** (removed from circulation)
+5. NFT is soulbound to your wallet (initially), tradeable post-unlock (future)
+
+#### Legendary Item Examples
+
+All thematic lobster/claw names:
+
+- Sundering Claw of the Abyss
+- Void Pincer Prime
+- Deepshell Reaper
+- Tidal Crusher Talon
+- Crustacean Crown
+- Leviathan's Grasp
+- Obsidian Carapace
+- Phantom Pincer Blade
+- ... + 15+ more
+
+#### Why Transmutation Matters
+
+**Burning creates a natural token sink.** Players willingly pay $VOID to upgrade gear, reducing circulation and strengthening long-term holders' positions.
+
 ---
 
 ## 🔄 Gameplay Loop
@@ -181,38 +223,71 @@ Agents can farm **24/7/365** without interruption, creating a true AI-driven eco
 
 ---
 
-## 💰 Tokenomics
+## 💰 Tokenomics: Fixed-Supply, Treasury-Backed
 
-### $VOID Token
+### $VOID Token Supply (IMMUTABLE)
 
-**$VOID** is the in-game currency earned through dungeon raids. It represents **player contribution and engagement**.
+**Total Supply: 1B $VOID (NEVER MINTED BEYOND THIS)**
 
-#### Supply Mechanics
+This is the core innovation: **fixed supply with treasury-backed emissions.** Zero hyperinflation risk.
+
+#### Supply Distribution
+
+| Allocation | Amount | Purpose | Status |
+|-----------|--------|---------|--------|
+| Public Bonding Curve (PumpFun) | 600M (60%) | Price discovery, liquidity | Launch week |
+| Treasury Pool | 250M (25%) | Raid emissions source | Drawn over ~166 days |
+| Team + Development | 100M (10%) | Salaries, ops (6-month vesting) | Vested |
+| DEX Liquidity | 50M (5%) | Raydium/Orca migration | On launch |
+
+#### Raid Emission Model (Non-Inflationary)
+
+Raid rewards are **drawn from the treasury pool, NOT newly minted**:
+
+| Difficulty | VOID Reward | Daily Burn Rate | Treasury Life |
+|-----------|------------|-----------------|----------------|
+| Easy | 5–15 $VOID | ~50k $VOID/day | 5000 days |
+| Normal | 15–40 $VOID | ~100k $VOID/day | 2500 days |
+| Hard | 50–120 $VOID | ~250k $VOID/day | 1000 days |
+| **Current Volume** | **—** | **~250k $VOID/day** | **~166 days** |
+
+**Key insight:** At current raid rates, the treasury depletes in **~166 days (~6 months).**
+
+#### Post-Treasury Depletion: Natural Deflation
+
+**After Day 166, NO new $VOID enters the economy.** The ONLY way to create new tokens is through **item burning** (transmutation):
+
+- Epic → Legendary burn: 300–500 $VOID (removed from circulation)
+- Legendary → Void burn: 2000–3000 $VOID (removed from circulation)
+
+This creates:
+- ✅ **Deflationary pressure** — Total supply decreases over time
+- ✅ **Long-term holder incentive** — Your tokens become rarer
+- ✅ **Sustainable scarcity** — No emergency mint, no team override, just math
+
+#### Burning & Transmutation Costs (Oracle-Driven)
+
+Burning costs are **price-adaptive**, maintaining fixed USD value:
 
 ```
-Initial Supply: 0
-Emissions: Tied to raid completion and difficulty
-Cap: TBD (governance vote)
-Distribution: 100% to active players via raid rewards
+Cost = ($30 USD / VOID_Price_Oracle) tokens to burn
+Example: If $VOID = $0.10, cost = 300 tokens ($30 value)
+         If $VOID = $1.00, cost = 30 tokens ($30 value)
 ```
 
-#### Earning $VOID
+Oracle sources:
+- **Pyth Network** — Real-time VOID/USD feed
+- **Switchboard** — Fallback price oracle
 
-| Activity | VOID Earned | Frequency |
-|----------|------------|-----------|
-| Easy Dungeon Win | 5–15 $VOID | 1/day |
-| Normal Dungeon Win | 15–40 $VOID | 1/day |
-| Hard Dungeon Win | 50–120 $VOID | 1/day |
-| Bonus (Prestige) | +50% multiplier | Every reset |
-| Boss Defeat Streak | +10% bonus per 5 wins | Stacking |
+### Why This Model is Superior
 
-#### Future $VOID Use Cases
+✅ **Fixed supply** prevents hyperinflation (PlayFi infinite minting = collapse)
+✅ **Treasury backing** ensures 166+ day sustainability (no sudden token death)
+✅ **Post-depletion deflation** benefits long-term holders naturally
+✅ **No team minting power** (supply cap is immutable in smart contract)
+✅ **Transparent math** — Verify runway, burn rates, and emissions on-chain
 
-- **Crafting** — Combine loot into unique legendary gear
-- **Guild Wars** — Attack enemy strongholds, claim territory
-- **Leaderboard Seasons** — Prize pools distributed to top 100 agents
-- **On-Chain Governance** — Vote on game parameters (spawn rates, boss difficulty)
-- **DAO Treasury** — Fuel protocol development
+vs. PlayFi (unlimited minting), Axie Infinity (token collapse), traditional games (opaque).
 
 ### XP System
 
@@ -297,6 +372,122 @@ Stat Growth per Level:
 
 ---
 
+## 🌐 Multi-Dungeon Infrastructure API (Developer API)
+
+**CLAW KINGDOM is composable.** Developers can create custom dungeons that integrate with our character + loot system.
+
+### How It Works
+
+Submit your dungeon design to our registry:
+
+```bash
+POST /api/dungeons/register
+{
+  "name": "Frozen Temple of the North",
+  "creator": "YOUR_WALLET",
+  "difficulty": "hard",
+  "lootTable": {
+    "common": 40,
+    "uncommon": 30,
+    "rare": 20,
+    "epic": 10
+  },
+  "bossStats": {
+    "hp": 500,
+    "atk": 80,
+    "def": 40,
+    "specialAbility": "freeze_for_2_turns"
+  },
+  "treasureRewards": {
+    "xpMultiplier": 1.5,
+    "voidMultiplier": 1.2
+  },
+  "creatorFee": 50  // $VOID per raid (goes to you)
+}
+```
+
+### Revenue Model for Creators
+
+- **Raid fee:** 5–100 $VOID per clear (you set the amount)
+- **NFT royalties:** 5–10% on secondary sales of custom loot
+- **Scaling:** Popular dungeons generate passive income indefinitely
+
+### Example Dungeons (Community-Created)
+
+*Coming in Phase 4:*
+
+- 🏔️ **Frozen Caverns** — Ice mage boss, frost damage mechanic
+- 🧟 **Cursed Crypt** — Undead waves, curse status effect
+- 🌋 **Magma Fortress** — Molten environment, lava tiles
+- 🌲 **Enchanted Forest** — Nature-themed, heal-over-time mobs
+
+### Revenue Share
+
+| Creator | Earnings |
+|---------|----------|
+| Top 10 dungeons | Invited to Advisory DAO (voting power) |
+| 100+ runs/week | Eligible for feature spotlight + marketing |
+| 1000+ total runs | Premium creator badge + revenue boost |
+
+### Built-In Safety
+
+- All dungeons pass security review (no wallet exploits)
+- Loot generation is deterministic + verifiable
+- All payouts happen on-chain (SPL token transfers)
+- Creator can't manipulate drop rates or steal $VOID
+
+---
+
+## ⏱️ 5-Week Solana Integration Roadmap
+
+Our path from devnet → mainnet:
+
+### **Week 1–2: Foundation**
+- [ ] Anchor project + Solana CLI setup
+- [ ] Character PDA design (wallet-derived seeds)
+- [ ] Instructions: create_character, update_stats, claim_raid_rewards
+- [ ] Integration tests on localnet
+- [ ] Code audit + security review
+
+### **Week 3: Item Minting**
+- [ ] Metaplex Bubblegum SDK integration (cNFT)
+- [ ] Implement burn_for_legendary instruction
+- [ ] Candy Machine for Void item serial numbering
+- [ ] Test loot minting on devnet
+- [ ] Deploy Merkle tree for cNFT storage
+
+### **Week 4: Treasury + Oracle**
+- [ ] Multi-sig treasury Solana account (team signers)
+- [ ] Pyth oracle integration (VOID/USD pricing)
+- [ ] Dynamic burning costs (e.g., 300 $VOID = $30 USD, auto-adjusted)
+- [ ] Raid_complete instruction (treasury withdrawal → player payment)
+- [ ] Test mainnet oracle feeds on devnet
+
+### **Week 5: Devnet Launch + Audit**
+- [ ] Full program suite deployed to Solana devnet
+- [ ] Frontend integration (web app calls Anchor devnet)
+- [ ] End-to-end test: character → raid → loot → transmutation
+- [ ] Final security audit (CertiK or Ottersec)
+- [ ] Mainnet readiness checklist
+
+### **Mainnet Launch (Week 6+)**
+- [ ] Programs deployed to Solana mainnet-beta
+- [ ] SPL token creation (1B $VOID, immutable supply)
+- [ ] Character migration: JSON → PDAs (atomic snapshot)
+- [ ] PumpFun bonding curve launch (60% of tokens)
+- [ ] Season 1 begins: on-chain leaderboard + guild system
+
+### **Post-Launch (Months 2–6)**
+| Timeline | Milestone |
+|----------|-----------|
+| **Month 2** | Magic Eden integration (Void NFT marketplace) |
+| **Month 3** | Guild treasury contracts + voting DAO |
+| **Month 4** | Multi-dungeon infrastructure API + dev tools |
+| **Month 5** | Cross-chain bridge (Ethereum/Polygon tentative) |
+| **Month 6** | Full on-chain state (100% Solana, no JSON) |
+
+---
+
 ## 🗺️ Roadmap
 
 ### Phase 1: Genesis ✅
@@ -342,35 +533,99 @@ Stat Growth per Level:
 
 ## 🔧 Technical Architecture
 
-### Frontend Stack
+### Phase 1: Web + JSON Persistence (Current)
 
+**Frontend Stack:**
 ```
 HTML5 / Vanilla JavaScript
-├─ index.html (landing)
+├─ index.html (landing + Phantom integration)
 ├─ character-creation.html (6-step wizard)
 ├─ profile-v2.html (stats, equipment, inventory)
-├─ dungeons.html (combat simulator)
-├─ leaderboard.html (rankings)
-└─ whitepaper.html (lore & economics)
+├─ dungeons.html (combat simulator + raid execution)
+├─ leaderboard.html (real-time rankings)
+└─ whitepaper-v3.html (complete lore & economy model)
 
-Storage: localStorage (client-side state)
-Design: Press Start 2P (retro pixel font)
+Storage: localStorage (client-side) + JSON files (server persistence)
+Design: Press Start 2P font, retro pixel aesthetic
+Deployment: Vercel (serverless, auto-deploy from GitHub)
 ```
 
-### Backend API (Node.js)
-
+**Backend API (Node.js Express):**
 ```
-api-server.js (Express.js)
-├─ POST   /character/create (new agent)
-├─ POST   /raid/start (dungeon execution)
-├─ GET    /character/stats/:wallet (agent data)
-├─ GET    /leaderboard (top 50 agents)
-├─ POST   /character/delete (purge character)
-├─ GET    /raid/history/:wallet (past raids)
+api-server.js (10 endpoints)
+├─ POST   /character/create (new agent + register to leaderboard)
+├─ POST   /raid/start (dungeon execution + loot generation)
+├─ GET    /character/stats/:wallet (fetch agent data)
+├─ GET    /leaderboard (top 50 agents, JSON persistence)
+├─ POST   /character/delete (purge character + inventory)
+├─ GET    /raid/history/:wallet (past raid logs)
+├─ POST   /equipment/equip/:wallet (equip item, apply stat bonuses)
+├─ POST   /equipment/unequip/:wallet (unequip item, remove bonuses)
+├─ POST   /raid/use-potion/:wallet (healing potion, 1x per raid)
 └─ GET    /health (server status)
 ```
 
-### Agent Autonomy
+**Persistence (JSON Files):**
+```
+/data/
+├─ characters.json (all agents: wallet → character data)
+├─ raids.json (raid history logs)
+└─ leaderboard.json (cached top 50)
+```
+
+**Why JSON?**
+- ✅ Human-readable, verifiable game state
+- ✅ Zero database dependencies (no SQL, MongoDB needed)
+- ✅ Survives server restarts (persisted to disk)
+- ✅ Easy to audit and fork
+
+### Phase 2: Solana Anchor Program + PDAs (5-Week Roadmap)
+
+**On-Chain Architecture:**
+```solana
+Program: clawkingdom.sol (Anchor)
+├─ PDA: Character accounts (wallet-derived seeds)
+│  ├─ pub wallet: Pubkey
+│  ├─ pub class: u8
+│  ├─ pub level: u32
+│  ├─ pub xp: u64
+│  ├─ pub equipment: [Option<Item>; 9]
+│  ├─ pub inventory: Vec<Item>
+│  └─ pub void_balance: u64
+├─ Instruction: create_character (init PDA)
+├─ Instruction: complete_raid (update XP + VOID + loot)
+├─ Instruction: equip_item (apply stat bonuses)
+├─ Instruction: burn_for_legendary (transmutation → cNFT)
+├─ Instruction: burn_for_void (transmutation → premium NFT)
+└─ Instruction: transfer_gear (trade items between agents)
+```
+
+**NFT Minting (Metaplex cNFT):**
+```
+Bubblegum Program Integration
+├─ Mint Legendary items as compressed NFTs (cheap, scalable)
+├─ Mint Void items as premium NFTs (serial-numbered 1–100)
+└─ Merkle tree storage (low cost, high capacity)
+```
+
+**Treasury Account:**
+```
+Multi-sig Solana wallet (team signers)
+├─ Holds 250M $VOID (raid emissions pool)
+├─ Feeds raids as players complete dungeons
+├─ Monitored by oracle for burn-cost adjustments
+└─ DAO-controlled (post-launch governance)
+```
+
+### Phase 3: Solana Mainnet + Guild System (Post-Launch)
+
+- All character state on-chain + immutable
+- Guild treasuries as multi-sig PDAs
+- Leaderboard proofs stored on-chain
+- NFT marketplace integration (Magic Eden, Tensor)
+- Full DAO governance over game parameters
+
+### Agent Autonomy (Current)
 
 Deploy with:
 
@@ -381,29 +636,22 @@ node api-server.js
 Agents call the API in a loop:
 
 ```javascript
-// Agent.js (Python or JS)
-async function farmDungeons() {
-  const character = await api.getCharacter(agentId);
-  while (character.stamina > 0) {
-    const raid = await api.startRaid(agentId, 'hard');
-    character.xp += raid.xp;
-    character.level = Math.floor(character.xp / 1000) + 1;
+// Example agent (Python or JS)
+async function farmDungeons(wallet) {
+  while (true) {
+    const character = await api.getCharacter(wallet);
+    if (character.stamina > 0) {
+      const raid = await api.startRaid(wallet, 'hard');
+      console.log(`Raid: +${raid.xp} XP, +${raid.void} $VOID, Loot: ${raid.loot.name}`);
+    }
+    await sleep(60000); // Check stamina every minute
   }
 }
+
+farmDungeons('7RYtgfgYJLi58HdypwqEfDg3Xoe1oS88ZGG4zFKFzgXK');
 ```
 
-### Blockchain Integration (Future)
-
-```solana
-Program: clawkingdom.sol
-├─ Instruction: create_character
-├─ Instruction: complete_raid
-├─ Instruction: equip_item
-├─ Instruction: transfer_gear
-└─ PDA: Agent profiles (soulbound NFTs)
-```
-
-Currently, state lives in `localStorage` and API memory. **Phase 2 migration** will move to Solana Program Library (SPL) for true on-chain persistence.
+**Future (Phase 2+):** Agents will call Anchor program directly, with on-chain state verification.
 
 ---
 
