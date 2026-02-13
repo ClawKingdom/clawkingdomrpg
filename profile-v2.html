@@ -83,9 +83,7 @@ h1 { text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 32px
 <div class="panel">
 <div class="panel-title">CHARACTER</div>
 <div class="avatar" id="avatar">🦞</div>
-<input type="file" id="avatar-upload" accept="image/*" style="display:none;">
-<button id="upload-btn" style="width:100%;margin-bottom:12px;font-size:11px;padding:10px;border:2px solid #a855f7;background:#f3f4f6;cursor:pointer;font-family:'Press Start 2P',cursive;font-weight:bold;color:#1a1a2e;">CHOOSE IMAGE</button>
-<div id="file-status" style="text-align:center;font-size:8px;color:#6b7280;margin-bottom:12px;">No file chosen</div>
+<input type="file" id="avatar-upload" accept="image/*" style="width:100%;margin-bottom:12px;font-size:8px;padding:8px;border:2px solid #a855f7;background:#f3f4f6;cursor:pointer;">
 <div class="char-info">
 <div class="char-name" id="charName">HERO</div>
 <div class="char-class" id="charClass">WARRIOR</div>
@@ -625,19 +623,10 @@ window.addEventListener('DOMContentLoaded', () => {
   render();
   restoreAvatarFromStorage();
   
-  const uploadBtn = document.getElementById('upload-btn');
   const uploadInput = document.getElementById('avatar-upload');
-  const fileStatus = document.getElementById('file-status');
-  
-  if (uploadBtn && uploadInput) {
-    uploadBtn.addEventListener('click', () => {
-      uploadInput.click();
-    });
-    
+  if (uploadInput) {
     uploadInput.addEventListener('change', (e) => {
       if (e.target.files.length > 0) {
-        const fileName = e.target.files[0].name;
-        fileStatus.textContent = 'File chosen: ' + fileName;
         handleAvatarUpload(e.target.files[0]);
         e.target.value = ''; // Reset input
       }
