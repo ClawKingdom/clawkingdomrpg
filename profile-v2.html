@@ -113,6 +113,27 @@ h1 { text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 32px
 <div class="equipment-grid" id="equipmentGrid">
 <!-- Equipment slots go here -->
 </div>
+
+<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #374151;">
+<div style="font-size: 10px; color: #a855f7; font-weight: bold; margin-bottom: 12px; letter-spacing: 1px;">🧪 CONSUMABLES</div>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+<div class="equipment-slot" id="consumable-1" style="min-height: 80px; cursor: grab;" ondrop="dropConsumable(event, 1)" ondragover="allowDrop(event)">
+<div class="slot-label">POTION 1</div>
+<div class="slot-icon" id="cons-1-icon">💊</div>
+<div class="empty-slot">Empty</div>
+</div>
+<div class="equipment-slot" id="consumable-2" style="min-height: 80px; cursor: grab;" ondrop="dropConsumable(event, 2)" ondragover="allowDrop(event)">
+<div class="slot-label">POTION 2</div>
+<div class="slot-icon" id="cons-2-icon">💊</div>
+<div class="empty-slot">Empty</div>
+</div>
+<div class="equipment-slot" id="consumable-3" style="min-height: 80px; cursor: grab;" ondrop="dropConsumable(event, 3)" ondragover="allowDrop(event)">
+<div class="slot-label">POTION 3</div>
+<div class="slot-icon" id="cons-3-icon">💊</div>
+<div class="empty-slot">Empty</div>
+</div>
+</div>
+</div>
 </div>
 
 <div class="panel">
@@ -341,6 +362,7 @@ function render() {
   }
   document.getElementById('inventoryCount').textContent = items.length + ' / 50';
   
+  renderConsumables();
   updateStats();
 }
 
@@ -532,6 +554,68 @@ function updateAvatarDisplay(base64) {
 function restoreAvatarFromStorage() {
   const saved = localStorage.getItem('clawkingdom_character_avatar');
   if (saved) updateAvatarDisplay(saved);
+}
+
+// ===== CONSUMABLES SYSTEM =====
+let draggedItemIndex = -1;
+
+function allowDrop(ev) { ev.preventDefault(); }
+
+function dropConsumable(ev, slotNum) {
+  ev.preventDefault();
+  if (draggedItemIndex < 0) return;
+  
+  const inventory = character.inventory || [];
+  const item = inventory[draggedItemIndex];
+  if (!item) return;
+  
+  if (!item.name.toLowerCase().includes('potion')) {
+    alert('⚠️ Only potions can be equipped here!');
+    draggedItemIndex = -1;
+    return;
+  }
+  
+  if (!character.consumables) character.consumables = {};
+  character.consumables[`slot${slotNum}`] = item;
+  inventory.splice(draggedItemIndex, 1);
+  
+  draggedItemIndex = -1;
+  saveCharacter();
+  render();
+  alert(`✅ ${item.name} equipped!`);
+}
+
+function unequipConsumable(slotNum) {
+  if (!character.consumables || !character.consumables[`slot${slotNum}`]) return;
+  const item = character.consumables[`slot${slotNum}`];
+  character.inventory.push(item);
+  delete character.consumables[`slot${slotNum}`];
+  saveCharacter();
+  render();
+}
+
+function renderConsumables() {
+  for (let i = 1; i <= 3; i++) {
+    const slot = document.getElementById(`consumable-${i}`);
+    const consumable = character.consumables?.[`slot${i}`];
+    
+    if (consumable) {
+      slot.innerHTML = `
+        <div class="slot-label">POTION ${i}</div>
+        <div class="slot-icon" style="cursor:pointer;opacity:0.8" onclick="unequipConsumable(${i})">${consumable.icon}</div>
+        <div class="slot-name">${consumable.name}</div>
+        <div style="font-size:8px;color:#aaa;margin-top:4px;cursor:pointer" onclick="unequipConsumable(${i})">Click to unequip</div>
+      `;
+      slot.style.borderColor = '#a855f7';
+    } else {
+      slot.innerHTML = `
+        <div class="slot-label">POTION ${i}</div>
+        <div class="slot-icon">💊</div>
+        <div class="empty-slot">Drag potion here</div>
+      `;
+      slot.style.borderColor = '#6b7280';
+    }
+  }
 }
 
 // Initialize on load
