@@ -494,13 +494,28 @@ function hideItemTooltip() {
 }
 
 window.deleteCharacter = function() {
-  if (confirm('⚠️ DELETE CHARACTER PERMANENTLY?')) {
+  if (confirm('⚠️ DELETE CHARACTER PERMANENTLY? This cannot be undone!')) {
+    const wallet = localStorage.getItem('clawkingdom_wallet');
+    
+    // Remove all character data
     localStorage.removeItem('clawkingdom_character');
     localStorage.removeItem('clawkingdom_equipment');
     localStorage.removeItem('clawkingdom_inventory');
     localStorage.removeItem('clawkingdom_stamina');
     localStorage.removeItem('clawkingdom_raid_history');
-    alert('✅ Character deleted!');
+    localStorage.removeItem('clawkingdom_void_total');
+    
+    // Remove avatar
+    if (wallet) {
+      localStorage.removeItem(`avatar_${wallet}`);
+    }
+    
+    // Remove from leaderboard
+    const allAgents = JSON.parse(localStorage.getItem('clawkingdom_all_agents') || '[]');
+    const filtered = allAgents.filter(a => a.wallet !== wallet);
+    localStorage.setItem('clawkingdom_all_agents', JSON.stringify(filtered));
+    
+    alert('✅ Character permanently deleted!');
     window.location.href = 'character-creation.html';
   }
 };
